@@ -70,15 +70,17 @@ public:
         std::vector<double> joint_values;
         current_robot_state_->copyJointGroupPositions(joint_group_model_,joint_values);
 
-        // servers
         callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
+        // servers
         print_state_server_ = node_->create_service<std_srvs::srv::Trigger>("~/print_robot_state",std::bind(&BareBonesMoveit::print_state, this,std::placeholders::_1, std::placeholders::_2),rmw_qos_profile_services_default,callback_group_);
         test_server_ = node_->create_service<std_srvs::srv::Trigger>("~/test_server",
             [this](std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res){
                 res->success = test_server_callback_();
                 return;
-            }
+            },
+            rmw_qos_profile_services_default,
+            callback_group_
         );
 
         // publisher
@@ -92,7 +94,7 @@ public:
         sample_timer_ = node_->create_wall_timer(200ms,
             [this](){
                 rclcpp::sleep_for(std::chrono::milliseconds(50));
-            }
+            },callback_group_
         );
 
         executor_->spin();
@@ -103,6 +105,20 @@ public:
         auto eepose = move_group_interface_->getCurrentPose();
         do_ik(eepose.pose);
         do_fk(std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+        
+        auto LOGGER = node_->get_logger();
+        
+        auto current_pose = move_group_interface_->getCurrentPose().pose;
+        RCLCPP_INFO(LOGGER,"Current x:%.2f, y:%.2f, z:%.2f, qw:%.2f,qx:%.2f,qy:%.2f,qz:%.2f",
+            current_pose.position.x,
+            current_pose.position.y,
+            current_pose.position.z,
+            current_pose.orientation.w,
+            current_pose.orientation.x,
+            current_pose.orientation.y,
+            current_pose.orientation.z
+        );
+
         move_to_joint_positions(std::vector<double>{
             -1.3648873614431747,
             -1.7595786208070698,
@@ -113,11 +129,10 @@ public:
         });
         
         rclcpp::sleep_for(std::chrono::milliseconds(3000));
-        auto LOGGER = node_->get_logger();
         RCLCPP_INFO(LOGGER,"Finished the boring stuff, starting cubic traj now");
 
         // cubic trajectory client
-        auto current_pose = move_group_interface_->getCurrentPose().pose;
+        current_pose = move_group_interface_->getCurrentPose().pose;
         RCLCPP_INFO(LOGGER,"Current x:%.2f, y:%.2f, z:%.2f, qw:%.2f,qx:%.2f,qy:%.2f,qz:%.2f",
             current_pose.position.x,
             current_pose.position.y,
@@ -132,15 +147,7 @@ public:
         wp1.position.x += 0.3;
         wp2.position.y -= 0.1;
         wp3.position.z += 0.05;
-        RCLCPP_INFO(LOGGER,"Current x:%.2f, y:%.2f, z:%.2f, qw:%.2f,qx:%.2f,qy:%.2f,qz:%.2f",
-            current_pose.position.x,
-            current_pose.position.y,
-            current_pose.position.z,
-            current_pose.orientation.w,
-            current_pose.orientation.x,
-            current_pose.orientation.y,
-            current_pose.orientation.z
-        );
+
         auto req = std::make_shared<motion_planning_abstractions_msgs::srv::GenerateTrajectory::Request>();
         req->durations = std::vector<double>{0.0,1,0.8,2};
         req->waypoints = std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3};
@@ -169,10 +176,9 @@ public:
             return false;
         }
         RCLCPP_INFO(node_->get_logger(),"Traj exec succeded");
-        return true;
 
         rclcpp::sleep_for(std::chrono::milliseconds(1000));
-
+        
         current_pose = move_group_interface_->getCurrentPose().pose;
         RCLCPP_INFO(LOGGER,"Current x:%.2f, y:%.2f, z:%.2f, qw:%.2f,qx:%.2f,qy:%.2f,qz:%.2f",
             current_pose.position.x,
@@ -186,10 +192,12 @@ public:
 
         execute_waypoints_cubic(
             std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},
-            std::vector<double>{1.0,1.0,0.8,2},
+            std::vector<double>{0.0,1.0,0.8,2},
             0.3,
             0.05
         );
+
+        execute_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3});
     }
 
     bool execute_waypoints_cubic(std::vector<geometry_msgs::msg::Pose> waypoints, std::vector<double> durations, double average_speed, double waypoint_speed){
@@ -270,24 +278,6 @@ public:
 
         response->message = print_pose();
         response->success = true;
-    }
-
-    // EXECUTE WAYPOINTS AND MOVE TO POSE NEED TO BE INVESTIGATED
-    void move_to_pose(const geometry_msgs::msg::Pose &pose){
-        move_group_interface_->setPoseTarget(pose);
-        auto const [success, plan] = [this]{
-            moveit::planning_interface::MoveGroupInterface::Plan msg;
-            auto const ok = static_cast<bool>(this->move_group_interface_->plan(msg));
-            return std::make_pair(ok, msg);
-        }();
-
-        if(success){
-            move_group_interface_->execute(plan);
-        }
-        else{
-            RCLCPP_ERROR(node_->get_logger(), "Planning Failed");
-        }
-        move_group_interface_->clearPoseTargets();
     }
 
     bool execute_waypoints(const std::vector<geometry_msgs::msg::Pose> &waypoints){

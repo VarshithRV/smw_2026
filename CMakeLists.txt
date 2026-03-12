@@ -22,6 +22,11 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   std_srvs
 )
 
+install(
+  DIRECTORY launch 
+  DESTINATION share/${PROJECT_NAME}
+)
+
 add_executable(perception_proxy_server src/perception_proxy_server.cpp)
 ament_target_dependencies(perception_proxy_server ${THIS_PACKAGE_INCLUDE_DEPENDS})
 install(TARGETS

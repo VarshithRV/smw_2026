@@ -15,6 +15,7 @@
   <depend>geometry_msgs</depend>
   <depend>sut06_dual_arm_workcell_bringup</depend>
   <depend>std_srvs</depend>
+  <exec_depend>motion_planning_abstractions</exec_depend>
   
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

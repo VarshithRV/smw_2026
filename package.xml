@@ -13,9 +13,31 @@
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>sut06_dual_arm_workcell_bringup</depend>
   <depend>std_srvs</depend>
-  <exec_depend>motion_planning_abstractions</exec_depend>
+
+  <depend>sut06_dual_arm_workcell_bringup</depend>
+  <depend>motion_planning_abstractions</depend>
+  <depend>motion_planning_abstractions_msgs</depend>
+
+  <depend>moveit_core</depend>
+  <depend>moveit_msgs</depend>
+  <depend>moveit_ros_planning</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>moveit_servo</depend>
+
+  <depend>pluginlib</depend>
+
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_components</depend>
+
+  <depend>tf2</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <depend>trajectory_msgs</depend>
+  <depend>ur_msgs</depend>
+
+  <depend>rosidl_runtime_cpp</depend>
   
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

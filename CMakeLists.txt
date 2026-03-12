@@ -11,8 +11,23 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(sut06_dual_arm_workcell_bringup REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(trajectory_msgs REQUIRED)
+find_package(sut06_dual_arm_workcell_bringup REQUIRED)
+find_package(motion_planning_abstractions_msgs REQUIRED)
+find_package(moveit_core REQUIRED)
+find_package(moveit_msgs REQUIRED)
+find_package(moveit_ros_planning REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
+find_package(moveit_servo REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(ur_msgs REQUIRED)
+find_package(rosidl_runtime_cpp REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   rclcpp
@@ -20,6 +35,25 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   std_msgs
   geometry_msgs
   std_srvs
+  motion_planning_abstractions_msgs
+  moveit_core
+  moveit_msgs
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  moveit_servo
+  pluginlib
+  rclcpp
+  rclcpp_action
+  rclcpp_components
+  std_msgs
+  std_srvs
+  tf2
+  tf2_eigen
+  tf2_geometry_msgs
+  trajectory_msgs
+  ur_msgs
+  rosidl_runtime_cpp
+  trajectory_msgs
 )
 
 install(
@@ -31,6 +65,13 @@ add_executable(perception_proxy_server src/perception_proxy_server.cpp)
 ament_target_dependencies(perception_proxy_server ${THIS_PACKAGE_INCLUDE_DEPENDS})
 install(TARGETS
 perception_proxy_server
+DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(co1_deconing src/CO1_deconing.cpp)
+ament_target_dependencies(co1_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
+install(TARGETS
+co1_deconing
 DESTINATION lib/${PROJECT_NAME}
 )
 

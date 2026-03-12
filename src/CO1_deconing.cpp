@@ -30,26 +30,31 @@ public:
     BareBonesMoveit()
     {
         node_ = std::make_shared<rclcpp::Node>("co1_deconing");
-
-        node_->declare_parameter<std::string>("planning_group", "right_ur16e");
-        node_->declare_parameter<std::string>("arm_side", "right");
-        node_->declare_parameter<std::string>("endeffector_link", "right_tool0");
         
-        planning_group_ = node_->get_parameter("planning_group").as_string();
-        arm_side_ = node_->get_parameter("arm_side").as_string();
-        endeffector_link_ = node_->get_parameter("endeffector_link").as_string();
+        left_planning_group_="left_ur16e";
+        right_planning_group_="right_ur16e";
+        left_endeffector_link_="left_tool0";
+        right_endeffector_link_="right_tool0";
 
         system_clock_ = rclcpp::Clock(RCL_SYSTEM_TIME);
         
         // move group interface shit
-        move_group_interface_ = std::make_shared<MoveGroupInterface>(node_, planning_group_);
-        move_group_interface_->setEndEffectorLink(endeffector_link_);
-        move_group_interface_->setPlanningTime(10.0);
-        move_group_interface_->setNumPlanningAttempts(15);
-        move_group_interface_->setMaxVelocityScalingFactor(0.1);
-        move_group_interface_->setMaxAccelerationScalingFactor(0.1);
-        move_group_interface_->setPlannerId("RRTConnectkConfigDefault");
-        move_group_interface_->startStateMonitor();
+        left_move_group_interface_ = std::make_shared<MoveGroupInterface>(node_, left_planning_group_);
+        left_move_group_interface_->setEndEffectorLink(left_endeffector_link_);
+        left_move_group_interface_->setPlanningTime(10.0);
+        left_move_group_interface_->setNumPlanningAttempts(15);
+        left_move_group_interface_->setMaxVelocityScalingFactor(0.1);
+        left_move_group_interface_->setMaxAccelerationScalingFactor(0.1);
+        left_move_group_interface_->setPlannerId("RRTConnectkConfigDefault");
+        left_move_group_interface_->startStateMonitor();
+        right_move_group_interface_ = std::make_shared<MoveGroupInterface>(node_, right_planning_group_);
+        right_move_group_interface_->setEndEffectorLink(right_endeffector_link_);
+        right_move_group_interface_->setPlanningTime(10.0);
+        right_move_group_interface_->setNumPlanningAttempts(15);
+        right_move_group_interface_->setMaxVelocityScalingFactor(0.1);
+        right_move_group_interface_->setMaxAccelerationScalingFactor(0.1);
+        right_move_group_interface_->setPlannerId("RRTConnectkConfigDefault");
+        right_move_group_interface_->startStateMonitor();
 
         // more node shit
         executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
@@ -65,60 +70,90 @@ public:
         current_robot_state_=std::make_shared<moveit::core::RobotState>(kinematic_model_);
         current_robot_state_->setToDefaultValues();
 
-        joint_group_model_ = kinematic_model_->getJointModelGroup(planning_group_);
-        const std::vector<std::string>& joint_names = joint_group_model_->getVariableNames();
-        std::vector<double> joint_values;
-        current_robot_state_->copyJointGroupPositions(joint_group_model_,joint_values);
+        left_joint_group_model_ = kinematic_model_->getJointModelGroup(left_planning_group_);
+        right_joint_group_model_ = kinematic_model_->getJointModelGroup(right_planning_group_);
+
+        const std::vector<std::string>& left_joint_names = left_joint_group_model_->getVariableNames();
+        const std::vector<std::string>& right_joint_names = right_joint_group_model_->getVariableNames();
+
+        std::vector<double> left_joint_values;
+        current_robot_state_->copyJointGroupPositions(left_joint_group_model_,left_joint_values);
+
+        std::vector<double> right_joint_values;
+        current_robot_state_->copyJointGroupPositions(right_joint_group_model_,right_joint_values);
 
         callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
         // servers
         print_state_server_ = node_->create_service<std_srvs::srv::Trigger>("~/print_robot_state",std::bind(&BareBonesMoveit::print_state, this,std::placeholders::_1, std::placeholders::_2),rmw_qos_profile_services_default,callback_group_);
-        test_server_ = node_->create_service<std_srvs::srv::Trigger>("~/test_server",
+        driver_server_ = node_->create_service<std_srvs::srv::Trigger>("~/driver_server",
             [this](std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res){
-                res->success = test_server_callback_();
+                res->success = driver_server_callback_();
                 return;
             },
             rmw_qos_profile_services_default,
             callback_group_
         );
 
-        // publisher
-        sample_publisher_ = node_->create_publisher<geometry_msgs::msg::Pose>("~/sample_topic",10);
-
         // service clients
-        execute_trajectory_client_ = node_->create_client<std_srvs::srv::Trigger>("/right_task_space_cubic_polynomial_trajectory_server/execute_trajectory");
-        generate_trajectory_client_ = node_->create_client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>("/right_task_space_cubic_polynomial_trajectory_server/generate_trajectory");
-
-        // timers
-        sample_timer_ = node_->create_wall_timer(200ms,
-            [this](){
-                rclcpp::sleep_for(std::chrono::milliseconds(50));
-            },callback_group_
-        );
+        left_execute_trajectory_client_ = node_->create_client<std_srvs::srv::Trigger>("/left_task_space_cubic_polynomial_trajectory_server/execute_trajectory");
+        right_execute_trajectory_client_ = node_->create_client<std_srvs::srv::Trigger>("/right_task_space_cubic_polynomial_trajectory_server/execute_trajectory");
+        
+        left_generate_trajectory_client_ = node_->create_client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>("/left_task_space_cubic_polynomial_trajectory_server/generate_trajectory");
+        right_generate_trajectory_client_ = node_->create_client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>("/right_task_space_cubic_polynomial_trajectory_server/generate_trajectory");
 
         executor_->spin();
     }
 
-    // TEST SERVER CALLBACK HERE
-    bool test_server_callback_(){
-        auto eepose = move_group_interface_->getCurrentPose();
-        do_ik(eepose.pose);
-        do_fk(std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
-        
+    // driver SERVER CALLBACK HERE
+    bool driver_server_callback_(){
         auto LOGGER = node_->get_logger();
         
-        auto current_pose = move_group_interface_->getCurrentPose().pose;
-        RCLCPP_INFO(LOGGER,"Current x:%.2f, y:%.2f, z:%.2f, qw:%.2f,qx:%.2f,qy:%.2f,qz:%.2f",
-            current_pose.position.x,
-            current_pose.position.y,
-            current_pose.position.z,
-            current_pose.orientation.w,
-            current_pose.orientation.x,
-            current_pose.orientation.y,
-            current_pose.orientation.z
+        // LEFT STUFF
+        auto eepose = left_move_group_interface_->getCurrentPose();
+
+        do_ik(eepose.pose,"left");
+        do_fk(std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},"left");
+
+        // joint space planning function
+        move_to_joint_positions(std::vector<double>{
+            0.7001547037006974,
+            -2.155814594930773,
+            -1.7762531671844755,
+            -0.8586940890838916,
+            -1.5189716287842765,
+            2.475396053208172
+        },left_move_group_interface_);
+        
+        rclcpp::sleep_for(std::chrono::milliseconds(3000));
+        RCLCPP_INFO(LOGGER,"Finished the boring stuff, starting cubic traj now");
+        
+        auto current_pose = left_move_group_interface_->getCurrentPose().pose;
+        auto wp1(current_pose),wp2(current_pose),wp3(current_pose);
+        wp1.position.x += 0.3;
+        wp2.position.y -= 0.1;
+        wp3.position.z += 0.05;
+
+        rclcpp::sleep_for(std::chrono::milliseconds(1000));
+
+        // cubic planning function
+        execute_waypoints_cubic(
+            std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},
+            std::vector<double>{0.0,1.0,0.8,2},
+            0.3,
+            0.05,
+            "left"
         );
 
+        // cartesian planning function
+        execute_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},left_move_group_interface_);
+
+        // RIGHT STUFF
+        eepose = right_move_group_interface_->getCurrentPose();
+        do_ik(eepose.pose,"right");
+        do_fk(std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},"right");
+
+        // joint space planning function
         move_to_joint_positions(std::vector<double>{
             -1.3648873614431747,
             -1.7595786208070698,
@@ -126,130 +161,116 @@ public:
             -1.7340977760567944,
             -5.633357407467017,
             1.3341727624436612
-        });
+        },right_move_group_interface_);
         
         rclcpp::sleep_for(std::chrono::milliseconds(3000));
         RCLCPP_INFO(LOGGER,"Finished the boring stuff, starting cubic traj now");
 
-        // cubic trajectory client
-        current_pose = move_group_interface_->getCurrentPose().pose;
-        RCLCPP_INFO(LOGGER,"Current x:%.2f, y:%.2f, z:%.2f, qw:%.2f,qx:%.2f,qy:%.2f,qz:%.2f",
-            current_pose.position.x,
-            current_pose.position.y,
-            current_pose.position.z,
-            current_pose.orientation.w,
-            current_pose.orientation.x,
-            current_pose.orientation.y,
-            current_pose.orientation.z
-        );
+        current_pose = right_move_group_interface_->getCurrentPose().pose;
 
-        auto wp1(current_pose),wp2(current_pose),wp3(current_pose);
+        wp1 = current_pose;
+        wp2 = current_pose;
+        wp3 = current_pose;
         wp1.position.x += 0.3;
         wp2.position.y -= 0.1;
         wp3.position.z += 0.05;
 
-        auto req = std::make_shared<motion_planning_abstractions_msgs::srv::GenerateTrajectory::Request>();
-        req->durations = std::vector<double>{0.0,1,0.8,2};
-        req->waypoints = std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3};
-        auto gen_traj_future = generate_trajectory_client_->async_send_request(req);
-        if(gen_traj_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready){
-            RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj generated");
-            return false;
-        }
-        auto gen_res = gen_traj_future.get();
-
-        if(!gen_res->success){
-            RCLCPP_ERROR(node_->get_logger(),"Traj generation failed %s",gen_res->message.c_str());
-            RCLCPP_INFO(LOGGER,"Failed to generate trajectory");
-            return false;
-        }
-
-        RCLCPP_INFO(node_->get_logger(),"Traj generated, now executing");
-        auto exec_traj_future = execute_trajectory_client_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
-        if(exec_traj_future.wait_for(5s) != std::future_status::ready){
-            RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj executed");
-            return false;
-        }
-        auto exec_res = exec_traj_future.get();
-        if(!exec_res->success){
-            RCLCPP_ERROR(node_->get_logger(),"Traj exec failed");
-            return false;
-        }
-        RCLCPP_INFO(node_->get_logger(),"Traj exec succeded");
-
         rclcpp::sleep_for(std::chrono::milliseconds(1000));
-        
-        current_pose = move_group_interface_->getCurrentPose().pose;
-        RCLCPP_INFO(LOGGER,"Current x:%.2f, y:%.2f, z:%.2f, qw:%.2f,qx:%.2f,qy:%.2f,qz:%.2f",
-            current_pose.position.x,
-            current_pose.position.y,
-            current_pose.position.z,
-            current_pose.orientation.w,
-            current_pose.orientation.x,
-            current_pose.orientation.y,
-            current_pose.orientation.z
-        );
 
+        // cubic planning function
         execute_waypoints_cubic(
             std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},
             std::vector<double>{0.0,1.0,0.8,2},
             0.3,
-            0.05
+            0.05,
+            "right"
         );
 
-        execute_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3});
+        // cartesian planning function
+        execute_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},right_move_group_interface_);
+
+        return true;
     }
 
-    bool execute_waypoints_cubic(std::vector<geometry_msgs::msg::Pose> waypoints, std::vector<double> durations, double average_speed, double waypoint_speed){
+    bool execute_waypoints_cubic(std::vector<geometry_msgs::msg::Pose> waypoints, std::vector<double> durations, double average_speed, double waypoint_speed, std::string side){
         auto req = std::make_shared<motion_planning_abstractions_msgs::srv::GenerateTrajectory::Request>();
         req->durations = durations;
         req->waypoints = waypoints;
         req->average_speed = average_speed;
         req->waypoint_speed = waypoint_speed;
 
-        auto gen_traj_future = generate_trajectory_client_->async_send_request(req);
-        if(gen_traj_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready){
-            RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj generated");
+        if(side=="left"){
+            auto gen_traj_future = left_generate_trajectory_client_->async_send_request(req);
+            if(gen_traj_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready){
+                RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj generated");
+                return false;
+            }
+            auto gen_res = gen_traj_future.get();
+            if(!gen_res->success){
+                RCLCPP_ERROR(node_->get_logger(),"Traj generation failed %s",gen_res->message.c_str());
+                return false;
+            }
+            RCLCPP_INFO(node_->get_logger(),"Traj generated, now executing");
+            auto exec_traj_future = left_execute_trajectory_client_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
+            if(exec_traj_future.wait_for(5s) != std::future_status::ready){
+                RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj executed");
+                return false;
+            }
+            auto exec_res = exec_traj_future.get();
+            if(!exec_res->success){
+                RCLCPP_ERROR(node_->get_logger(),"Traj exec failed");
+                return false;
+            }
+        }
+        else if(side=="right"){
+            auto gen_traj_future = right_generate_trajectory_client_->async_send_request(req);
+            if(gen_traj_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready){
+                RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj generated");
+                return false;
+            }
+            auto gen_res = gen_traj_future.get();
+            if(!gen_res->success){
+                RCLCPP_ERROR(node_->get_logger(),"Traj generation failed %s",gen_res->message.c_str());
+                return false;
+            }
+            RCLCPP_INFO(node_->get_logger(),"Traj generated, now executing");
+            auto exec_traj_future = right_execute_trajectory_client_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
+            if(exec_traj_future.wait_for(5s) != std::future_status::ready){
+                RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj executed");
+                return false;
+            }
+            auto exec_res = exec_traj_future.get();
+            if(!exec_res->success){
+                RCLCPP_ERROR(node_->get_logger(),"Traj exec failed");
+                return false;
+            }
+        }
+        else{
+            RCLCPP_INFO(node_->get_logger(),"No side \"%s\"",side.c_str());
             return false;
         }
-        auto gen_res = gen_traj_future.get();
-        if(!gen_res->success){
-            RCLCPP_ERROR(node_->get_logger(),"Traj generation failed %s",gen_res->message.c_str());
-            return false;
-        }
-        RCLCPP_INFO(node_->get_logger(),"Traj generated, now executing");
-        auto exec_traj_future = execute_trajectory_client_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
-        if(exec_traj_future.wait_for(5s) != std::future_status::ready){
-            RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj executed");
-            return false;
-        }
-        auto exec_res = exec_traj_future.get();
-        if(!exec_res->success){
-            RCLCPP_ERROR(node_->get_logger(),"Traj exec failed");
-            return false;
-        }
-        RCLCPP_INFO(node_->get_logger(),"Traje exec succeded");
+        RCLCPP_INFO(node_->get_logger(),"Traj exec succeded");
         return true;
     }
 
-    void move_to_joint_positions(const std::vector<double>joint_positions){
-        move_group_interface_->setStartStateToCurrentState();
-        move_group_interface_->setJointValueTarget(joint_positions);
-        auto const [success, plan] = [this]{
+    void move_to_joint_positions(const std::vector<double>joint_positions, std::shared_ptr<MoveGroupInterface> move_group_interface){
+        move_group_interface->setStartStateToCurrentState();
+        move_group_interface->setJointValueTarget(joint_positions);
+        auto const [success, plan] = [this,move_group_interface]{
             moveit::planning_interface::MoveGroupInterface::Plan msg;
-            auto const ok=static_cast<bool>(this->move_group_interface_->plan(msg));
+            auto const ok=static_cast<bool>(move_group_interface->plan(msg));
             return std::make_pair(ok,msg);
         }();
         if(success){
-            move_group_interface_->execute(plan);
+            move_group_interface->execute(plan);
         }
     }
 
     void print_state(const std_srvs::srv::Trigger::Request::SharedPtr request,std_srvs::srv::Trigger::Response::SharedPtr response){
-        auto current_state = move_group_interface_->getCurrentState();
+        auto current_state = left_move_group_interface_->getCurrentState();
         (void)current_state;
-        auto current_pose = move_group_interface_->getCurrentPose();
-        auto current_joint_values = move_group_interface_->getCurrentJointValues();
+        auto current_pose = left_move_group_interface_->getCurrentPose();
+        auto current_joint_values = left_move_group_interface_->getCurrentJointValues();
 
         auto print_pose = [this, current_joint_values, current_pose](){
             double x = current_pose.pose.position.x;
@@ -275,19 +296,24 @@ public:
             message += "X : " + std::to_string(x) +" Y : " + std::to_string(y) +" Z : " + std::to_string(z);
             return message;
         };
+        auto left_details = print_pose();
 
-        response->message = print_pose();
+        current_state = right_move_group_interface_->getCurrentState();
+        current_pose = right_move_group_interface_->getCurrentPose();
+        current_joint_values = right_move_group_interface_->getCurrentJointValues();
+
+        response->message = left_details + print_pose();
         response->success = true;
     }
 
-    bool execute_waypoints(const std::vector<geometry_msgs::msg::Pose> &waypoints){
-        move_group_interface_->setStartStateToCurrentState();
+    bool execute_waypoints(const std::vector<geometry_msgs::msg::Pose> &waypoints,std::shared_ptr<MoveGroupInterface> move_group_interface){
+        move_group_interface->setStartStateToCurrentState();
         moveit_msgs::msg::RobotTrajectory trajectory;
         const double eef_step = 0.002;
         const double jump_threshold = 0.0;
 
         RCLCPP_INFO(node_->get_logger(), "Computing cartesian path");
-        double fraction = move_group_interface_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+        double fraction = move_group_interface->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
 
         if(fraction < 1.0){
             RCLCPP_ERROR(node_->get_logger(),"Cartesian path planning failed, fraction: %f", fraction);
@@ -299,66 +325,116 @@ public:
         moveit::planning_interface::MoveGroupInterface::Plan plan;
         plan.trajectory_ = trajectory;
 
-        auto result = move_group_interface_->execute(plan);
+        auto result = move_group_interface->execute(plan);
         if(result != moveit::core::MoveItErrorCode::SUCCESS){
             RCLCPP_ERROR(node_->get_logger(), "Cartesian path execution failed");
             return false;
         }
-        move_group_interface_->setStartStateToCurrentState();
+        move_group_interface->setStartStateToCurrentState();
         return true;
     }
 
-    void do_fk(std::vector<double> joint_state){
+    void do_fk(std::vector<double> joint_state, std::string side){
         robot_model_loader::RobotModelLoader robot_model_loader(node_);
         const moveit::core::RobotModelPtr& kinematic_model = robot_model_loader.getModel();
         RCLCPP_INFO(node_->get_logger(), "Model frame: %s", kinematic_model->getModelFrame().c_str());
         moveit::core::RobotStatePtr robot_state(new moveit::core::RobotState(kinematic_model));
         robot_state->setToDefaultValues();
-        const moveit::core::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup(this->planning_group_);
+        const moveit::core::JointModelGroup* joint_model_group;
+        if(side=="left"){
+            joint_model_group = kinematic_model->getJointModelGroup(this->left_planning_group_);
+        }
+        else if(side=="right"){
+            joint_model_group = kinematic_model->getJointModelGroup(this->right_planning_group_);
+        }
+        else{
+            RCLCPP_INFO(node_->get_logger(),"No side \"%s\"",side.c_str());
+            return;
+        }
         const std::vector<std::string>& joint_names = joint_model_group->getVariableNames();
-        robot_state->copyJointGroupPositions(joint_model_group, joint_state);
+        robot_state->setJointGroupPositions(joint_model_group, joint_state);
+        robot_state->update();
+
         for (std::size_t i = 0; i < joint_names.size(); ++i)
         {
           RCLCPP_INFO(node_->get_logger(), "Joint %s: %f", joint_names[i].c_str(), joint_state[i]);
         }
-        robot_state->setToRandomPositions(joint_model_group);
-        const Eigen::Isometry3d& end_effector_state = robot_state->getGlobalLinkTransform(arm_side_ + "_tool0");
+
+        Eigen::Isometry3d end_effector_state;
+        if(side=="left")
+            end_effector_state = robot_state->getGlobalLinkTransform(left_endeffector_link_);
+        else if(side=="right")
+            end_effector_state = robot_state->getGlobalLinkTransform(right_endeffector_link_);    
+        else{
+            RCLCPP_INFO(node_->get_logger(),"No side \"%s\"",side.c_str());
+            return;
+        }
         /* Print end-effector pose. Remember that this is in the model frame */
         RCLCPP_INFO_STREAM(node_->get_logger(), "Translation: \n" << end_effector_state.translation() << "\n");
         RCLCPP_INFO_STREAM(node_->get_logger(), "Rotation: \n" << end_effector_state.rotation() << "\n");
     }
 
-    void do_ik(const geometry_msgs::msg::Pose& eepose){
-        Eigen::Isometry3d ee_state;
-        ee_state.translation().x() = eepose.position.x;
-        ee_state.translation().y() = eepose.position.y;
-        ee_state.translation().z() = eepose.position.z;
-        ee_state.rotate(Eigen::Quaterniond(eepose.orientation.w,eepose.orientation.x,eepose.orientation.y,eepose.orientation.z));
-        bool found_ik = current_robot_state_->setFromIK(joint_group_model_,ee_state,0.1);
-        std::vector<double> joint_values;
-        std::vector<std::string> joint_names = joint_group_model_->getVariableNames();
-        if(found_ik){
-            current_robot_state_->copyJointGroupPositions(joint_group_model_, joint_values);
-            for (std::size_t i = 0; i < joint_names.size(); ++i)
-            {
-              RCLCPP_INFO(node_->get_logger(), "Joint %s: %f", joint_names[i].c_str(), joint_values[i]);
-            }
-        }
-        else
-            RCLCPP_INFO(node_->get_logger(), "Did not find IK solution");
+    void do_ik(const geometry_msgs::msg::Pose& eepose, std::string side) {
+        Eigen::Isometry3d ee_state = Eigen::Isometry3d::Identity();
+        ee_state.translation() = Eigen::Vector3d(
+            eepose.position.x,
+            eepose.position.y,
+            eepose.position.z
+        );
+        ee_state.linear() =
+            Eigen::Quaterniond(
+                eepose.orientation.w,
+                eepose.orientation.x,
+                eepose.orientation.y,
+                eepose.orientation.z
+            ).normalized().toRotationMatrix();
 
-        Eigen::Vector3d reference_point_position(0.0, 0.0, 0.0);
-        Eigen::MatrixXd jacobian;
-        current_robot_state_->getJacobian(joint_group_model_,
-                                     current_robot_state_->getLinkModel(joint_group_model_->getLinkModelNames().back()),
-                                     reference_point_position, jacobian);
-        RCLCPP_INFO_STREAM(node_->get_logger(), "Jacobian: \n" << jacobian << "\n");
+        bool found_ik = false;
+        std::vector<std::string> joint_names;
+        std::vector<double> joint_values;
+
+        if (side == "left") {
+            current_robot_state_->setJointGroupPositions(
+                left_joint_group_model_,
+                left_move_group_interface_->getCurrentJointValues()
+            );
+            current_robot_state_->update();
+            found_ik = current_robot_state_->setFromIK(left_joint_group_model_, ee_state, 0.1);
+            joint_names = left_joint_group_model_->getVariableNames();
+            if (found_ik) {
+                current_robot_state_->copyJointGroupPositions(left_joint_group_model_, joint_values);
+            }
+        } else if (side == "right") {
+            current_robot_state_->setJointGroupPositions(
+                right_joint_group_model_,
+                right_move_group_interface_->getCurrentJointValues()
+            );
+            current_robot_state_->update();
+            found_ik = current_robot_state_->setFromIK(right_joint_group_model_, ee_state, 0.1);
+            joint_names = right_joint_group_model_->getVariableNames();
+            if (found_ik) {
+                current_robot_state_->copyJointGroupPositions(right_joint_group_model_, joint_values);
+            }
+        } else {
+            RCLCPP_INFO(node_->get_logger(), "No side \"%s\"", side.c_str());
+            return;
+        }
+
+        if (!found_ik) {
+            RCLCPP_INFO(node_->get_logger(), "Did not find IK solution");
+            return;
+        }
+
+        for (std::size_t i = 0; i < joint_names.size(); ++i) {
+            RCLCPP_INFO(node_->get_logger(), "Joint %s: %f", joint_names[i].c_str(), joint_values[i]);
+        }
     }
 
 private:
     std::thread thread_;
     
-    std::shared_ptr<MoveGroupInterface> move_group_interface_;
+    std::shared_ptr<MoveGroupInterface> left_move_group_interface_;
+    std::shared_ptr<MoveGroupInterface> right_move_group_interface_;
     rclcpp::Node::SharedPtr node_;
     
     rclcpp::executors::MultiThreadedExecutor::SharedPtr executor_;
@@ -371,11 +447,12 @@ private:
     // moveit stuff
     moveit::core::RobotModelPtr kinematic_model_;
     moveit::core::RobotStatePtr current_robot_state_;
-    const moveit::core::JointModelGroup* joint_group_model_;
+    const moveit::core::JointModelGroup* left_joint_group_model_;
+    const moveit::core::JointModelGroup* right_joint_group_model_;
 
     // servers
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr print_state_server_;
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr test_server_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr driver_server_;
 
     // clients
 
@@ -385,16 +462,19 @@ private:
     // subscribers
     
     // clients
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr execute_trajectory_client_;
-    rclcpp::Client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>::SharedPtr generate_trajectory_client_;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr left_execute_trajectory_client_;
+    rclcpp::Client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>::SharedPtr left_generate_trajectory_client_;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr right_execute_trajectory_client_;
+    rclcpp::Client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>::SharedPtr right_generate_trajectory_client_;
 
     // timers
     rclcpp::TimerBase::SharedPtr sample_timer_;
 
     // parameters and data
-    std::string arm_side_;
-    std::string planning_group_;
-    std::string endeffector_link_;
+    std::string left_planning_group_;
+    std::string left_endeffector_link_;
+    std::string right_planning_group_;
+    std::string right_endeffector_link_;
 };
 
 int main(int argc, char *argv[])

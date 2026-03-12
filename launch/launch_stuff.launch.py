@@ -234,9 +234,6 @@ def launch_setup(context, *args, **kwargs):
             robot_description_kinematics,
             {"use_sim_time": use_sim_time},
             {
-                "planning_group": "right_ur16e",
-                "endeffector_link": "right_tool0",
-                "arm_side": "right",
             },
         ]
     )

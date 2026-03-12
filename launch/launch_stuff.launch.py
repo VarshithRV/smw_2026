@@ -270,11 +270,11 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # left and right preaction
-    left_preaction_server = Node(
+    # left and right rest
+    left_rest_server = Node(
         package="motion_planning_abstractions",
         executable="predefined_state_server",
-        name="left_preaction_server",
+        name="left_rest_server",
         output="screen",
         parameters=[
             robot_description_kinematics,
@@ -294,10 +294,10 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    right_preaction_server = Node(
+    right_rest_server = Node(
         package="motion_planning_abstractions",
         executable="predefined_state_server",
-        name="right_preaction_server",
+        name="right_rest_server",
         output="screen",
         parameters=[
             robot_description_kinematics,
@@ -317,9 +317,59 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # left and right preaction
+    # not calibrated yet
+    left_preaction_server = Node(
+        package="motion_planning_abstractions",
+        executable="predefined_state_server",
+        name="left_preaction_server",
+        output="screen",
+        parameters=[
+            robot_description_kinematics,
+            {
+                "planning_group": "left_ur16e",
+                "shoulder_pan": 0.7448494020060257,
+                "shoulder_lift": -1.6898253014238567,
+                "elbow": -2.456773372167499,
+                "wrist_1": -0.6417658203742237,
+                "wrist_2": -1.5154170572868646,
+                "wrist_3": 2.4306718044994686,
+                "side": "left",
+                "endeffector_link": "left_tool0",
+                "side": "left",
+            },
+            {"use_sim_time": use_sim_time},
+        ],
+    )
+
+    right_preaction_server = Node(
+        package="motion_planning_abstractions",
+        executable="predefined_state_server",
+        name="right_preaction_server",
+        output="screen",
+        parameters=[
+            robot_description_kinematics,
+            {
+                "planning_group": "right_ur16e",
+                "shoulder_pan": -1.5090274839633915,
+                "shoulder_lift": -1.3341525419086298,
+                "elbow": 2.4658033777926884,
+                "wrist_1": -2.7294902694791077,
+                "wrist_2": -5.643478982580015,
+                "wrist_3": 1.573848219709341,
+                "joint_trajectory_controller": "right_scaled_joint_trajectory_controller",
+                "endeffector_link": "right_tool0",
+                "side": "right",
+            },
+            {"use_sim_time": use_sim_time},
+        ],
+    )
+
     nodes_to_start = [
         left_task_space_cubic_polynomial_trajectory_server,
         right_task_space_cubic_polynomial_trajectory_server,
+        left_rest_server,
+        right_rest_server,
         left_preaction_server,
         right_preaction_server,
     ]

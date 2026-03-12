@@ -242,7 +242,7 @@ def launch_setup(context, *args, **kwargs):
         package="motion_planning_abstractions",
         executable="task_space_cubic_polynomial_trajectory_server",
         name="left_task_space_cubic_polynomial_trajectory_server",
-        output="screen",
+        # output="screen",
         parameters=[
             robot_description,
             robot_description_semantic,
@@ -265,7 +265,7 @@ def launch_setup(context, *args, **kwargs):
         package="motion_planning_abstractions",
         executable="task_space_cubic_polynomial_trajectory_server",
         name="right_task_space_cubic_polynomial_trajectory_server",
-        output="screen",
+        # output="screen",
         parameters=[
             robot_description,
             robot_description_semantic,
@@ -289,7 +289,7 @@ def launch_setup(context, *args, **kwargs):
         package="motion_planning_abstractions",
         executable="predefined_state_server",
         name="left_rest_server",
-        output="screen",
+        # output="screen",
         parameters=[
             robot_description_kinematics,
             {
@@ -312,7 +312,7 @@ def launch_setup(context, *args, **kwargs):
         package="motion_planning_abstractions",
         executable="predefined_state_server",
         name="right_rest_server",
-        output="screen",
+        # output="screen",
         parameters=[
             robot_description_kinematics,
             {
@@ -337,7 +337,7 @@ def launch_setup(context, *args, **kwargs):
         package="motion_planning_abstractions",
         executable="predefined_state_server",
         name="left_preaction_server",
-        output="screen",
+        # output="screen",
         parameters=[
             robot_description_kinematics,
             {
@@ -360,7 +360,7 @@ def launch_setup(context, *args, **kwargs):
         package="motion_planning_abstractions",
         executable="predefined_state_server",
         name="right_preaction_server",
-        output="screen",
+        # output="screen",
         parameters=[
             robot_description_kinematics,
             {

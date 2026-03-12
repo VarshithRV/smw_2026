@@ -108,7 +108,44 @@ public:
     bool driver_server_callback_(){
         auto LOGGER = node_->get_logger();
         auto waypoints = Waypoints(); // this is where all the waypoints are
+        // joint space movement to rest
+        move_to_joint_positions(waypoints.right_rest_state.joint_values,right_move_group_interface_);
+        //waypoint to the cone
+        move_to_joint_positions(waypoints.right_wp1.joint_values,right_move_group_interface_);
+        std::vector<geometry_msgs::msg::Pose> to_the_cone{
+            // waypoints.right_wp0.pose,
+            // waypoints.right_wp1.pose,
+            waypoints.right_wp2.pose,
+            waypoints.right_wp3.pose,
+        };
+        RCLCPP_INFO(LOGGER,"++++++++++++++++++++++Moving to the cone++++++++++++++++++++++");
+        execute_waypoints_cubic(to_the_cone,std::vector<double>{1.0,0.75},0.3,0.07,"right");
+        // execute_waypoints(to_the_cone,right_move_group_interface_);
+        // how to wait to get to a halt here
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        // twist
+        std::vector<geometry_msgs::msg::Pose> twist{
+            waypoints.right_wp4.pose,
+        };
+        RCLCPP_INFO(LOGGER,"++++++++++++++++++++++Twisting,++++++++++++++++++++++");
+        // execute_waypoints_cubic(twist,std::vector<double>{2.0},0.3,0.05,"right");
+        execute_waypoints(twist,right_move_group_interface_);
 
+        // get down
+        std::vector<geometry_msgs::msg::Pose> down{
+            waypoints.right_wp5.pose,
+        };
+        execute_waypoints_cubic(down,std::vector<double>{1.0},0.3,0.05,"right");
+
+        // backoff
+        std::vector<geometry_msgs::msg::Pose> back_off{
+            waypoints.right_wp6.pose,
+            waypoints.right_wp7.pose,
+            waypoints.right_wp8.pose,
+        };
+        // execute_waypoints(back_off,right_move_group_interface_);
+        RCLCPP_INFO(LOGGER,"++++++++++++++++++++++Backing off,++++++++++++++++++++++");
+        execute_waypoints_cubic(back_off,std::vector<double>{2.5,2.5,1.5},0.3,0.05,"right");
         return true;
     }
 
@@ -215,8 +252,8 @@ public:
             }
             RCLCPP_INFO(node_->get_logger(),"Traj generated, now executing");
             auto exec_traj_future = left_execute_trajectory_client_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
-            if(exec_traj_future.wait_for(5s) != std::future_status::ready){
-                RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj executed");
+            if(exec_traj_future.wait_for(10s) != std::future_status::ready){
+                RCLCPP_ERROR(node_->get_logger(),"Waited for 10s, no traj executed");
                 return false;
             }
             auto exec_res = exec_traj_future.get();
@@ -238,8 +275,8 @@ public:
             }
             RCLCPP_INFO(node_->get_logger(),"Traj generated, now executing");
             auto exec_traj_future = right_execute_trajectory_client_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
-            if(exec_traj_future.wait_for(5s) != std::future_status::ready){
-                RCLCPP_ERROR(node_->get_logger(),"Waited for 5s, no traj executed");
+            if(exec_traj_future.wait_for(10s) != std::future_status::ready){
+                RCLCPP_ERROR(node_->get_logger(),"Waited for 10s, no traj executed");
                 return false;
             }
             auto exec_res = exec_traj_future.get();
@@ -258,6 +295,9 @@ public:
 
     void move_to_joint_positions(const std::vector<double>joint_positions, std::shared_ptr<MoveGroupInterface> move_group_interface){
         move_group_interface->setStartStateToCurrentState();
+        // Speed control
+        move_group_interface->setMaxVelocityScalingFactor(1.0);     // 0–1
+        move_group_interface->setMaxAccelerationScalingFactor(1.0); // 0–1
         move_group_interface->setJointValueTarget(joint_positions);
         auto const [success, plan] = [this,move_group_interface]{
             moveit::planning_interface::MoveGroupInterface::Plan msg;
@@ -311,6 +351,8 @@ public:
 
     bool execute_waypoints(const std::vector<geometry_msgs::msg::Pose> &waypoints,std::shared_ptr<MoveGroupInterface> move_group_interface){
         move_group_interface->setStartStateToCurrentState();
+        move_group_interface->setMaxVelocityScalingFactor(1.0);     // 0–1
+        move_group_interface->setMaxAccelerationScalingFactor(1.0);
         moveit_msgs::msg::RobotTrajectory trajectory;
         const double eef_step = 0.002;
         const double jump_threshold = 0.0;

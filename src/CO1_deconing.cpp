@@ -18,11 +18,10 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_state/robot_state.h>
-
+#include "C01_deconing_waypoints.hpp"
 
 using namespace std::chrono_literals;
 using moveit::planning_interface::MoveGroupInterface;
-
 
 class BareBonesMoveit{
 public:
@@ -108,8 +107,14 @@ public:
     // driver SERVER CALLBACK HERE
     bool driver_server_callback_(){
         auto LOGGER = node_->get_logger();
-        
+        auto waypoints = Waypoints(); // this is where all the waypoints are
+
+        return true;
+    }
+
+    bool driver_example(){
         // LEFT STUFF
+        auto LOGGER = node_->get_logger();
         auto eepose = left_move_group_interface_->getCurrentPose();
 
         do_ik(eepose.pose,"left");
@@ -188,8 +193,6 @@ public:
 
         // cartesian planning function
         execute_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},right_move_group_interface_);
-
-        return true;
     }
 
     bool execute_waypoints_cubic(std::vector<geometry_msgs::msg::Pose> waypoints, std::vector<double> durations, double average_speed, double waypoint_speed, std::string side){

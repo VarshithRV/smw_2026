@@ -238,6 +238,21 @@ def launch_setup(context, *args, **kwargs):
         ]
     )
 
+    co4_deconing_node = Node(
+        package="smw_2026",
+        executable="co4_deconing",
+        name="co4_deconing",
+        output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {"use_sim_time": use_sim_time},
+            {
+            },
+        ]
+    )
+
     left_task_space_cubic_polynomial_trajectory_server = Node(
         package="motion_planning_abstractions",
         executable="task_space_cubic_polynomial_trajectory_server",
@@ -365,12 +380,12 @@ def launch_setup(context, *args, **kwargs):
             robot_description_kinematics,
             {
                 "planning_group": "right_ur16e",
-                "shoulder_pan": -1.5090274839633915,
-                "shoulder_lift": -1.3341525419086298,
-                "elbow": 2.4658033777926884,
-                "wrist_1": -2.7294902694791077,
-                "wrist_2": -5.643478982580015,
-                "wrist_3": 1.573848219709341,
+                "shoulder_pan": -2.3459141890155237,
+                "shoulder_lift": -2.1818372211852015,
+                "elbow":2.570200506840841,
+                "wrist_1": -3.2559219799437464,
+                "wrist_2": -5.47044271627535,
+                "wrist_3":2.9955930709838867,
                 "joint_trajectory_controller": "right_scaled_joint_trajectory_controller",
                 "endeffector_link": "right_tool0",
                 "side": "right",
@@ -387,6 +402,7 @@ def launch_setup(context, *args, **kwargs):
         left_preaction_server,
         right_preaction_server,
         co1_deconing_node,
+        co4_deconing_node,
     ]
     
     return nodes_to_start

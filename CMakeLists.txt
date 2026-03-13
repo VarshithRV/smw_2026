@@ -75,6 +75,13 @@ co1_deconing
 DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(co4_deconing src/C04_deconing.cpp)
+ament_target_dependencies(co4_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
+install(TARGETS
+co4_deconing
+DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

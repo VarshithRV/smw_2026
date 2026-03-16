@@ -397,12 +397,12 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_start = [
         left_task_space_cubic_polynomial_trajectory_server,
         right_task_space_cubic_polynomial_trajectory_server,
-        left_rest_server,
-        right_rest_server,
+        # left_rest_server,
+        # right_rest_server,
         left_preaction_server,
         right_preaction_server,
         co1_deconing_node,
-        co4_deconing_node,
+        # co4_deconing_node,
     ]
     
     return nodes_to_start

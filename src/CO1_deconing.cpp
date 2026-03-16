@@ -1,4 +1,4 @@
-// task space cubic polnomial traj server
+// dual arm control client for demos
 
 #include <memory>
 #include <string>
@@ -26,10 +26,10 @@ using moveit::planning_interface::MoveGroupInterface;
 class BareBonesMoveit{
 public:
 
-    BareBonesMoveit()
+    BareBonesMoveit(rclcpp::Node::SharedPtr node)
     {
-        node_ = std::make_shared<rclcpp::Node>("co1_deconing");
-        
+
+        node_ = node;
         left_planning_group_="left_ur16e";
         right_planning_group_="right_ur16e";
         left_endeffector_link_="left_tool0";
@@ -54,10 +54,6 @@ public:
         right_move_group_interface_->setMaxAccelerationScalingFactor(0.1);
         right_move_group_interface_->setPlannerId("RRTConnectkConfigDefault");
         right_move_group_interface_->startStateMonitor();
-
-        // more node shit
-        executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-        executor_->add_node(node_);
 
         rclcpp::sleep_for(1s);
 
@@ -101,41 +97,63 @@ public:
         left_generate_trajectory_client_ = node_->create_client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>("/left_task_space_cubic_polynomial_trajectory_server/generate_trajectory");
         right_generate_trajectory_client_ = node_->create_client<motion_planning_abstractions_msgs::srv::GenerateTrajectory>("/right_task_space_cubic_polynomial_trajectory_server/generate_trajectory");
 
-        executor_->spin();
+        if(!left_execute_trajectory_client_->wait_for_service(5s)){
+            RCLCPP_ERROR(node_->get_logger(),"No /left_task_space_cubic_polynomial_trajectory_server/execute_trajectory, timed out while waiting");
+        }
+        if(!right_execute_trajectory_client_->wait_for_service(5s)){
+            RCLCPP_ERROR(node_->get_logger(),"No /right_task_space_cubic_polynomial_trajectory_server/execute_trajectory, timed out while waiting");
+        }
+        if(!left_generate_trajectory_client_->wait_for_service(5s)){
+            RCLCPP_ERROR(node_->get_logger(),"No /left_task_space_cubic_polynomial_trajectory_server/generate_trajectory, timed out while waiting");
+        }
+        if(!right_generate_trajectory_client_->wait_for_service(5s)){
+            RCLCPP_ERROR(node_->get_logger(),"No /right_task_space_cubic_polynomial_trajectory_server/generate_trajectory, timed out while waiting");
+        }
     }
 
     // driver SERVER CALLBACK HERE
     bool driver_server_callback_(){
         auto LOGGER = node_->get_logger();
         auto waypoints = Waypoints(); // this is where all the waypoints are
-        // joint space movement to rest
+        
+        auto current_left_pose = get_current_ee_pose("left");
+        std::vector<geometry_msgs::msg::Pose>left_waypoints{
+            *current_left_pose,
+            [current_left_pose](){
+                auto pose = *current_left_pose;
+                pose.position.x += 0.1;
+                return pose;
+            }()
+        };
+
+        // // asynchronous calling of cubic trajectory example
+        // RCLCPP_INFO(node_->get_logger(),"Started the left cubic server asyncly");
+        // auto exec_future = async_start_execute_waypoints_cubic(left_waypoints,std::vector<double>{0,0.5},0.3,0.01,"left");
+        // block_till_response_execute_cubic_trajectory(exec_future, 5000ms);
+
+        RCLCPP_INFO(node_->get_logger(), "Starting left and right joint state motions in parallel");
+        
         move_to_joint_positions(waypoints.right_rest_state.joint_values,right_move_group_interface_);
+        
         //waypoint to the cone
         move_to_joint_positions(waypoints.right_wp1.joint_values,right_move_group_interface_);
         std::vector<geometry_msgs::msg::Pose> to_the_cone{
-            // waypoints.right_wp0.pose,
-            // waypoints.right_wp1.pose,
             waypoints.right_wp2.pose,
             waypoints.right_wp3.pose,
         };
-        RCLCPP_INFO(LOGGER,"++++++++++++++++++++++Moving to the cone++++++++++++++++++++++");
-        execute_waypoints_cubic(to_the_cone,std::vector<double>{1.0,0.75},0.3,0.07,"right");
-        // execute_waypoints(to_the_cone,right_move_group_interface_);
-        // how to wait to get to a halt here
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        execute_waypoints_cubic(to_the_cone,std::vector<double>{0.75,0.5},0.3,0.07,"right");
+        
         // twist
         std::vector<geometry_msgs::msg::Pose> twist{
             waypoints.right_wp4.pose,
         };
-        RCLCPP_INFO(LOGGER,"++++++++++++++++++++++Twisting,++++++++++++++++++++++");
-        // execute_waypoints_cubic(twist,std::vector<double>{2.0},0.3,0.05,"right");
-        execute_waypoints(twist,right_move_group_interface_);
+        execute_waypoints_cubic(twist,std::vector<double>{0.5},0.3,0.0,"right");
 
         // get down
         std::vector<geometry_msgs::msg::Pose> down{
             waypoints.right_wp5.pose,
         };
-        execute_waypoints_cubic(down,std::vector<double>{1.0},0.3,0.05,"right");
+        execute_waypoints_cubic(down,std::vector<double>{0.7},0.3,0.05,"right");
 
         // backoff
         std::vector<geometry_msgs::msg::Pose> back_off{
@@ -143,9 +161,8 @@ public:
             waypoints.right_wp7.pose,
             waypoints.right_wp8.pose,
         };
-        // execute_waypoints(back_off,right_move_group_interface_);
-        RCLCPP_INFO(LOGGER,"++++++++++++++++++++++Backing off,++++++++++++++++++++++");
-        execute_waypoints_cubic(back_off,std::vector<double>{2.5,2.5,1.5},0.3,0.05,"right");
+        execute_waypoints_cubic(back_off,std::vector<double>{1.0,1.0,0.7},0.3,0.05,"right");
+        
         return true;
     }
 
@@ -188,7 +205,7 @@ public:
         );
 
         // cartesian planning function
-        execute_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},left_move_group_interface_);
+        execute_cartesian_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},left_move_group_interface_);
 
         // RIGHT STUFF
         eepose = right_move_group_interface_->getCurrentPose();
@@ -229,9 +246,110 @@ public:
         );
 
         // cartesian planning function
-        execute_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},right_move_group_interface_);
+        execute_cartesian_waypoints(std::vector<geometry_msgs::msg::Pose>{current_pose,wp1,wp2,wp3},right_move_group_interface_);
+    }
+    
+    // use this to start the execute trajectory asynchronously, note that at a time, asyncly execute trajectories for different arms, do not do it for the same arm, unexpected behavior
+    std::shared_ptr<std::shared_future<std_srvs::srv::Trigger::Response::SharedPtr>> async_start_execute_waypoints_cubic(
+        std::vector<geometry_msgs::msg::Pose> waypoints, 
+        std::vector<double> durations, double average_speed, 
+        double waypoint_speed, std::string side){
+            auto goal = std::make_shared<motion_planning_abstractions_msgs::srv::GenerateTrajectory::Request>();
+            goal->average_speed = average_speed;
+            goal->durations = durations;
+            goal->waypoint_speed = waypoint_speed;
+            goal->waypoints = waypoints;
+
+            std::shared_ptr<motion_planning_abstractions_msgs::srv::GenerateTrajectory::Response> gen_response;
+
+            if(side =="left"){
+                auto future = left_generate_trajectory_client_->async_send_request(goal);
+                if(future.wait_for(2s)!=std::future_status::ready){
+                    RCLCPP_ERROR(node_->get_logger(),"Generate left trajectory service call timed out!");
+                    return nullptr;
+                }
+                gen_response = future.get();    
+            }
+            else if(side == "right"){
+                auto future = right_generate_trajectory_client_->async_send_request(goal);
+                if(future.wait_for(2s)!=std::future_status::ready){
+                    RCLCPP_ERROR(node_->get_logger(),"Generate left trajectory service call timed out!");
+                    return nullptr;
+                }
+                gen_response = future.get();    
+            }
+            else{
+                RCLCPP_INFO(node_->get_logger(),"The variable \"side\" is wrong");
+                return nullptr;
+            }
+
+            if(gen_response->success==true && gen_response->fraction == 100)
+                RCLCPP_INFO(node_->get_logger(),"Generate trajectory succeeded, message : %s", gen_response->message.c_str());
+            else{
+                RCLCPP_INFO(node_->get_logger(),"Generate trajectory failed, message : %s", gen_response->message.c_str());
+                return nullptr;
+            }
+            
+            RCLCPP_INFO(node_->get_logger(),"Starting the trajectory execution");
+
+            auto exec_future = std::make_shared<std::shared_future<std_srvs::srv::Trigger::Response::SharedPtr>>();
+
+            // start the execution of the trajectory
+            if(side=="left"){
+                std::shared_ptr<std_srvs::srv::Trigger::Request> exec_req=  std::make_shared<std_srvs::srv::Trigger::Request>();
+                *exec_future = left_execute_trajectory_client_->async_send_request(exec_req);
+            }
+            else{
+                std::shared_ptr<std_srvs::srv::Trigger::Request> exec_req=  std::make_shared<std_srvs::srv::Trigger::Request>();
+                *exec_future = right_execute_trajectory_client_->async_send_request(exec_req);
+            }
+
+            return exec_future;
     }
 
+    // use this to block till execute cubic trajectory returns a response
+    template<typename Rep, typename Period>
+    std_srvs::srv::Trigger::Response::SharedPtr block_till_response_execute_cubic_trajectory(
+        std::shared_ptr<std::shared_future<std_srvs::srv::Trigger::Response::SharedPtr>> exec_future, 
+        std::chrono::duration<Rep,Period> wait_duration
+    ){
+        if(exec_future==nullptr){
+            RCLCPP_ERROR(node_->get_logger(),"Nullptr received for future, looks like the service didn't execute well");
+            return nullptr;
+        }
+        if(exec_future->wait_for(wait_duration)!=std::future_status::ready){
+            RCLCPP_ERROR(node_->get_logger(),"execute cubic trajectory timed out");
+            return nullptr;
+        }
+        else{
+            auto response = exec_future->get();
+            return response;
+        }
+    }
+
+    // easy function to get the current pose of the end effector
+    geometry_msgs::msg::Pose::SharedPtr get_current_ee_pose(std::string side){
+        if(side =="left"){
+            return std::make_shared<geometry_msgs::msg::Pose>(left_move_group_interface_->getCurrentPose().pose);
+        }
+        else if(side =="right"){
+            return std::make_shared<geometry_msgs::msg::Pose>(right_move_group_interface_->getCurrentPose().pose);
+        }
+        else{
+            RCLCPP_INFO(node_->get_logger(),"The variable \"side\" is wrong");
+            return nullptr;
+        }
+    }
+
+    // ease function to get the current joint states of robot
+    std::vector<double> get_current_joint_state(std::string side){
+        if(side =="left")
+            return left_move_group_interface_->getCurrentJointValues();
+        else if(side =="right")
+            return right_move_group_interface_->getCurrentJointValues();
+    }
+
+    // generate and synchronous execution of cubic trajectory using waypoints, durations/avg_velocity, waypoint_speeds, side
     bool execute_waypoints_cubic(std::vector<geometry_msgs::msg::Pose> waypoints, std::vector<double> durations, double average_speed, double waypoint_speed, std::string side){
         auto req = std::make_shared<motion_planning_abstractions_msgs::srv::GenerateTrajectory::Request>();
         req->durations = durations;
@@ -292,7 +410,8 @@ public:
         RCLCPP_INFO(node_->get_logger(),"Traj exec succeded");
         return true;
     }
-
+    
+    // synchronous joint state planning based on input joint_positions and move_group_interface
     void move_to_joint_positions(const std::vector<double>joint_positions, std::shared_ptr<MoveGroupInterface> move_group_interface){
         move_group_interface->setStartStateToCurrentState();
         // Speed control
@@ -349,7 +468,8 @@ public:
         response->success = true;
     }
 
-    bool execute_waypoints(const std::vector<geometry_msgs::msg::Pose> &waypoints,std::shared_ptr<MoveGroupInterface> move_group_interface){
+    // synchronous cartesian trajectory generation and execution given waypoints and move_group_interface
+    bool execute_cartesian_waypoints(const std::vector<geometry_msgs::msg::Pose> &waypoints,std::shared_ptr<MoveGroupInterface> move_group_interface){
         move_group_interface->setStartStateToCurrentState();
         move_group_interface->setMaxVelocityScalingFactor(1.0);     // 0–1
         move_group_interface->setMaxAccelerationScalingFactor(1.0);
@@ -520,12 +640,24 @@ private:
     std::string left_endeffector_link_;
     std::string right_planning_group_;
     std::string right_endeffector_link_;
+    std::vector<double> left_joint_state_target_;
+    std::vector<double> right_joint_state_target_;
 };
 
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    auto moveit_example = BareBonesMoveit();
+    
+    rclcpp::Node::SharedPtr node;
+    node = std::make_shared<rclcpp::Node>("co1_deconing");
+    
+    rclcpp::executors::MultiThreadedExecutor::SharedPtr executor=std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+    executor->add_node(node);
+
+    auto moveit_example = BareBonesMoveit(node);
+    
+    executor->spin();
     rclcpp::shutdown();
+
     return 0;
 }

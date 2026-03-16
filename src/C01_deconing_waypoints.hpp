@@ -9,6 +9,23 @@ public:
         geometry_msgs::msg::Pose pose;
     };
 
+    // deconing program for C01
+    Waypoint right_rest_state;
+    Waypoint right_wp0;
+    Waypoint right_wp1;
+    Waypoint right_wp2;
+    // at the corner cast
+    Waypoint right_wp3;
+    // - z 90 deg
+    Waypoint right_wp4;
+    // down
+    Waypoint right_wp5;
+    // come back
+    Waypoint right_wp6;
+    Waypoint right_wp7;
+    // come back all the way
+    Waypoint right_wp8;
+
     Waypoints()
     {
         initialize_wp(
@@ -203,22 +220,4 @@ public:
         wp.pose.orientation.z = pose[6];
         wp.joint_values = joint_values;
     }
-
-    // deconing program for C01
-    Waypoint right_rest_state;
-    Waypoint right_wp0;
-    Waypoint right_wp1;
-    Waypoint right_wp2;
-    // at the corner cast
-    Waypoint right_wp3;
-    // - z 90 deg
-    Waypoint right_wp4;
-    // down
-    Waypoint right_wp5;
-    // come back
-    Waypoint right_wp6;
-    Waypoint right_wp7;
-
-    // come back all the way
-    Waypoint right_wp8;
 };

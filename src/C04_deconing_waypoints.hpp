@@ -9,6 +9,40 @@ public:
         geometry_msgs::msg::Pose pose;
     };
 
+    Waypoint right_rest_state;
+    // move j or cubic
+    Waypoint right_wp1;
+    Waypoint right_wp2;
+    // move l and wait till the left unlocks
+    Waypoint right_wp3;
+    // move l, rotate just a little once left unlocks and let left back away
+    Waypoint right_wp4;
+    // move l, full unlock and let left back away farther
+    Waypoint right_wp5;
+    // move l downwards, and let left completely get clear
+    Waypoint right_wp6;
+    // move l get the cone back
+    Waypoint right_wp7;
+    Waypoint right_wp78;
+    Waypoint right_wp8;
+
+
+    Waypoint left_rest;
+    // move j
+    Waypoint left_wp1;
+    // move l
+    Waypoint left_wp2;
+    // move l
+    Waypoint left_wp3;
+    // move l, this is unlock, after this waypoint, wait for a while for the right to twist a little bit
+    Waypoint left_wp4;
+    // wait
+    // move l to back away a little and let the right arm descend
+    Waypoint left_wp5;
+    // let the right arm descend
+    // movej to go back to home
+    Waypoint left_home;
+
     Waypoints()
     {
         // right side first
@@ -248,39 +282,4 @@ public:
         wp.pose.orientation.z = pose[6];
         wp.joint_values = joint_values;
     }
-
-    Waypoint right_rest_state;
-
-    // move j or cubic
-    Waypoint right_wp1;
-    Waypoint right_wp2;
-    // move l and wait till the left unlocks
-    Waypoint right_wp3;
-    // move l, rotate just a little once left unlocks and let left back away
-    Waypoint right_wp4;
-    // move l, full unlock and let left back away farther
-    Waypoint right_wp5;
-    // move l downwards, and let left completely get clear
-    Waypoint right_wp6;
-    // move l get the cone back
-    Waypoint right_wp7;
-    Waypoint right_wp78;
-    Waypoint right_wp8;
-
-
-    Waypoint left_rest;
-    // move j
-    Waypoint left_wp1;
-    // move l
-    Waypoint left_wp2;
-    // move l
-    Waypoint left_wp3;
-    // move l, this is unlock, after this waypoint, wait for a while for the right to twist a little bit
-    Waypoint left_wp4;
-    // wait
-    // move l to back away a little and let the right arm descend
-    Waypoint left_wp5;
-    // let the right arm descend
-    // movej to go back to home
-    Waypoint left_home;
 };

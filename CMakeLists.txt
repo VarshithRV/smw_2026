@@ -28,6 +28,7 @@ find_package(tf2_eigen REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(ur_msgs REQUIRED)
 find_package(rosidl_runtime_cpp REQUIRED)
+find_package(motion_planning_abstractions REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   rclcpp
@@ -35,6 +36,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   std_msgs
   geometry_msgs
   std_srvs
+  motion_planning_abstractions
   motion_planning_abstractions_msgs
   moveit_core
   moveit_msgs
@@ -79,6 +81,13 @@ add_executable(co4_deconing src/C04_deconing.cpp)
 ament_target_dependencies(co4_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
 install(TARGETS
 co4_deconing
+DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(so1_deconing src/S01_deconing.cpp)
+ament_target_dependencies(so1_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
+install(TARGETS
+so1_deconing
 DESTINATION lib/${PROJECT_NAME}
 )
 

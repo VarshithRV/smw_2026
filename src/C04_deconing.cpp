@@ -13,7 +13,7 @@
 #include "geometry_msgs/msg/pose.hpp"
 #include "std_srvs/srv/trigger.hpp"
 #include "motion_planning_abstractions/dual_arm_waypoint_programming.hpp"
-#include "C04_deconing_waypoints.hpp"
+#include "smw_2026/C04_deconing_waypoints.hpp"
 
 using namespace std::chrono_literals;
     

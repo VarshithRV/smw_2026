@@ -72,6 +72,9 @@ DESTINATION lib/${PROJECT_NAME}
 
 add_executable(co1_deconing src/CO1_deconing.cpp)
 ament_target_dependencies(co1_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_include_directories(co1_deconing PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 install(TARGETS
 co1_deconing
 DESTINATION lib/${PROJECT_NAME}
@@ -79,6 +82,9 @@ DESTINATION lib/${PROJECT_NAME}
 
 add_executable(co4_deconing src/C04_deconing.cpp)
 ament_target_dependencies(co4_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_include_directories(co4_deconing PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 install(TARGETS
 co4_deconing
 DESTINATION lib/${PROJECT_NAME}
@@ -86,6 +92,9 @@ DESTINATION lib/${PROJECT_NAME}
 
 add_executable(so1_deconing src/S01_deconing.cpp)
 ament_target_dependencies(so1_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_include_directories(so1_deconing PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 install(TARGETS
 so1_deconing
 DESTINATION lib/${PROJECT_NAME}

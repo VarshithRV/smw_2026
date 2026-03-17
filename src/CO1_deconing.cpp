@@ -8,7 +8,7 @@
 #include "geometry_msgs/msg/pose.hpp"
 #include "std_srvs/srv/trigger.hpp"
 #include "motion_planning_abstractions/dual_arm_waypoint_programming.hpp"
-#include "C01_deconing_waypoints.hpp"
+#include "smw_2026/C01_deconing_waypoints.hpp"
 
 int main(int argc, char** argv){
     rclcpp::init(argc,argv);

@@ -321,6 +321,8 @@ def launch_setup(context, *args, **kwargs):
         name="left_rest_server",
         # output="screen",
         parameters=[
+            robot_description,
+            robot_description_semantic,
             robot_description_kinematics,
             {
                 "planning_group": "left_ur16e",
@@ -344,6 +346,8 @@ def launch_setup(context, *args, **kwargs):
         name="right_rest_server",
         # output="screen",
         parameters=[
+            robot_description,
+            robot_description_semantic,
             robot_description_kinematics,
             {
                 "planning_group": "right_ur16e",
@@ -369,6 +373,8 @@ def launch_setup(context, *args, **kwargs):
         name="left_preaction_server",
         # output="screen",
         parameters=[
+            robot_description,
+            robot_description_semantic,
             robot_description_kinematics,
             {
                 "planning_group": "left_ur16e",
@@ -392,6 +398,8 @@ def launch_setup(context, *args, **kwargs):
         name="right_preaction_server",
         # output="screen",
         parameters=[
+            robot_description,
+            robot_description_semantic,
             robot_description_kinematics,
             {
                 "planning_group": "right_ur16e",

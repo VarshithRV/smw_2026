@@ -60,7 +60,7 @@ int main(int argc, char** argv){
         std::vector<geometry_msgs::msg::Pose> down{
             waypoints.right_wp5.pose,
         };
-        wp_entry_point->execute_waypoints_cubic(down,std::vector<double>{0.7},0.3,0.05,"right");
+        wp_entry_point->execute_waypoints_cubic(down,std::vector<double>{1.0},0.3,0.05,"right");
 
         // backoff
         std::vector<geometry_msgs::msg::Pose> back_off{
@@ -68,7 +68,7 @@ int main(int argc, char** argv){
             waypoints.right_wp7.pose,
             waypoints.right_wp8.pose,
         };
-        wp_entry_point->execute_waypoints_cubic(back_off,std::vector<double>{1.0,1.0,0.7},0.3,0.05,"right");
+        wp_entry_point->execute_waypoints_cubic(back_off,std::vector<double>{1.3,1.3,1.0},0.3,0.05,"right");
     };
 
     auto callback_group = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);

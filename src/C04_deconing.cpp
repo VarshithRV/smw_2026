@@ -31,41 +31,30 @@ int main(int argc, char** argv){
         auto waypoints = Waypoints(); // this is where all the waypoints are
         
         // right to the cc holding the cone
+        //waypoint to the cone
         wp_entry_point->move_to_joint_positions(waypoints.right_rest_state.joint_values,wp_entry_point->right_move_group_interface_);
         wp_entry_point->move_to_joint_positions(waypoints.right_wp1.joint_values,wp_entry_point->right_move_group_interface_);
-        wp_entry_point->move_to_joint_positions(waypoints.right_wp2.joint_values,wp_entry_point->right_move_group_interface_);
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-        std::vector<geometry_msgs::msg::Pose> right_to_the_cone{
-            waypoints.right_wp3.pose
+        std::vector<geometry_msgs::msg::Pose> to_the_cone{
+            waypoints.right_wp2.pose,
+            waypoints.right_wp3.pose,
         };
-        wp_entry_point->execute_waypoints_cubic(right_to_the_cone,std::vector<double>{2.0},0.3,0.02,"right");
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        wp_entry_point->execute_waypoints_cubic(to_the_cone,std::vector<double>{0.75,0.5},0.3,0.07,"right");
         
         // left to unlock
         wp_entry_point->move_to_joint_positions(waypoints.left_rest.joint_values,wp_entry_point->left_move_group_interface_);
-        wp_entry_point->move_to_joint_positions(waypoints.left_wp1.joint_values,wp_entry_point->left_move_group_interface_);
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        wp_entry_point->move_to_joint_positions(waypoints.left_wp1.joint_values,wp_entry_point->left_move_group_interface_);        
         
         std::vector<geometry_msgs::msg::Pose> left_to_the_cone{
-            waypoints.left_wp2.pose,
             waypoints.left_wp3.pose,
             waypoints.left_wp4.pose,
         };
-        wp_entry_point->execute_waypoints_cubic(left_to_the_cone,std::vector<double>{2.0,2.0,2.0},0.3,0.0,"left");
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
+        wp_entry_point->execute_waypoints_cubic(left_to_the_cone,std::vector<double>{0.8,1.0},0.3,0.0,"left");
+        
         // left unlocked, now right apply pressure a little
         std::vector<geometry_msgs::msg::Pose> right_pressure{
             waypoints.right_wp4.pose
         };
         wp_entry_point->execute_waypoints_cubic(right_pressure,std::vector<double>{2.0},0.3,0.02,"right"); 
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         // now left back away
         std::vector<geometry_msgs::msg::Pose> left_back_away{
@@ -73,22 +62,17 @@ int main(int argc, char** argv){
         };
         wp_entry_point->execute_waypoints_cubic(left_back_away,std::vector<double>{2.0},0.3,0.02,"left");
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
         // now right full unlock and downwards
         std::vector<geometry_msgs::msg::Pose> right_fullunlock{
             waypoints.right_wp5.pose,
             waypoints.right_wp6.pose
 
         };
-        wp_entry_point->execute_waypoints_cubic(right_fullunlock,std::vector<double>{2.0,2.0},0.3,0.0,"right"); 
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        wp_entry_point->execute_waypoints_cubic(right_fullunlock,std::vector<double>{0.8,1.0},0.3,0.0,"right"); 
 
         // clear left away completely
         wp_entry_point->move_to_joint_positions(waypoints.left_home.joint_values, wp_entry_point->left_move_group_interface_);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        
         // get the right arm back
         std::vector<geometry_msgs::msg::Pose> right_back{
             waypoints.right_wp7.pose,
@@ -97,7 +81,6 @@ int main(int argc, char** argv){
 
         };
         wp_entry_point->execute_waypoints_cubic(right_back,std::vector<double>{1.75,1.75,1.75},0.3,0.02,"right"); 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     };
 
     auto callback_group = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);

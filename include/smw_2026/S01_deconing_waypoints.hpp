@@ -10,37 +10,23 @@ public:
     };
 
     Waypoint right_rest_state;
-    // move j or cubic
     Waypoint right_wp1;
     Waypoint right_wp2;
-    // move l and wait till the left unlocks
     Waypoint right_wp3;
-    // move l, rotate just a little once left unlocks and let left back away
     Waypoint right_wp4;
-    // move l, full unlock and let left back away farther
     Waypoint right_wp5;
-    // move l downwards, and let left completely get clear
     Waypoint right_wp6;
-    // move l get the cone back
     Waypoint right_wp7;
     Waypoint right_wp78;
     Waypoint right_wp8;
 
-
     Waypoint left_rest;
-    // move j
     Waypoint left_wp1;
-    // move l
     Waypoint left_wp2;
-    // move l
     Waypoint left_wp3;
-    // move l, this is unlock, after this waypoint, wait for a while for the right to twist a little bit
     Waypoint left_wp4;
-    // wait
-    // move l to back away a little and let the right arm descend
     Waypoint left_wp5;
-    // let the right arm descend
-    // movej to go back to home
+    Waypoint left_wp6;
     Waypoint left_home;
 
     Waypoints()
@@ -94,31 +80,19 @@ public:
             }
         );
 
-        // small twist
-        initialize_wp(
-            right_wp4,
-            {},
-            {
-                0.768, -0.022, 0.350, 
-                -0.165, 0.004, -0.010, 0.986
-            }
-        );
+        //// CODE SPECIFIC TO SO1
 
-        // big twist
-        initialize_wp(
-            right_wp5,
-            {},
-            {
-                0.768, -0.022, 0.350,
-                -0.257, 0.005, -0.010, 0.966
-            } 
-        );
+
+
 
         // get down
         initialize_wp(
             right_wp6,
             {},
-            {0.793, -0.042, 0.232, -0.257, 0.005, -0.010, 0.966}
+            {
+                0.768, -0.022, 0.196,
+                0.003, -0.004, -0.019, 1.000 
+            }
         );
 
         // back off
@@ -176,51 +150,68 @@ public:
             },
             {}
         );
+        
+        //// CODE SPECIFIC TO SO1
+        initialize_wp(
+            left_wp2,
+            {},
+            {
+                0.765, 0.00, 0.179,
+                1.00, -0.000, -0.0, 0.000
+            }
+        );
 
-
-        // below cc
+        // at the cone
         initialize_wp(
             left_wp3,
             {},
             {
-                // 0.718, 0.058, 0.241, 
-                0.696, 0.058, 0.229,
-                0.680, 0.003, -0.015, -0.733,
-                // 1,0,0,0
+                0.765, 0.00, 0.273,
+                1.00, -0.000, -0.0, 0.000
             }
         );
 
-        // unlock
+        // gripper on
+        // twist the cone
         initialize_wp(
             left_wp4,
             {},
             {
-                0.696, 0.058, 0.329, 
-                0.680, 0.003, -0.015, -0.733
-                // 1,0,0,0
+                0.765, 0.00, 0.273,
+                0.297, -0.000, -0.002, 0.955
+            }
+        );
+
+        // gripper off
+        // left get down
+        initialize_wp(
+            left_wp5,
+            {},
+            {
+                0.765, 0.00, 0.179,
+                0.297, -0.000, -0.002, 0.955
             }
         );
 
         // back off
         initialize_wp(
-            left_wp5,
+            left_wp6,
             {},
             {
-                0.584, 0.134, 0.307, 
-                0.680, 0.003, -0.015, -0.733
-                // 1,0,0,0
+                0.584, 0.134, 0.179,
+                0.297, -0.000, -0.002, 0.955
             }
         );
 
         initialize_wp(
             left_home,
             {
-                0.6327896118164062,
-                -1.530074381535389,
-                -2.6847221851348877,
-                -0.4980843824199219,
-                -1.5689991156207483,
-                -2.204110447560445
+                0.6327896118164062, 
+                -1.530074381535389, 
+                -2.6847221851348877, 
+                -0.4980843824199219, 
+                -1.5689991156207483, 
+                -2.2041104475604456
             },
             {}
         );

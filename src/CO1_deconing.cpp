@@ -107,13 +107,16 @@ int main(int argc, char** argv){
         
         wp_entry_point->move_to_joint_positions(waypoints.right_rest_state.joint_values,wp_entry_point->right_move_group_interface_);
         
-        //waypoint to the cone
-        wp_entry_point->move_to_joint_positions(waypoints.right_wp1.joint_values,wp_entry_point->right_move_group_interface_);
+        // //waypoint to the cone
+        // wp_entry_point->move_to_joint_positions(waypoints.right_wp1.joint_values,wp_entry_point->right_move_group_interface_);
+
         std::vector<geometry_msgs::msg::Pose> to_the_cone{
+            waypoints.right_wp0.pose,
+            waypoints.right_wp1.pose,
             waypoints.right_wp2.pose,
             waypoints.right_wp3.pose,
         };
-        wp_entry_point->execute_waypoints_cubic(to_the_cone,std::vector<double>{0.75,0.5},0.3,0.07,"right");
+        wp_entry_point->execute_waypoints_cubic(to_the_cone,std::vector<double>{2.0,2.0,2.0,1.3},0.3,0.12,"right");
         
         // twist
         std::vector<geometry_msgs::msg::Pose> twist{

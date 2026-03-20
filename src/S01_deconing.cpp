@@ -101,30 +101,37 @@ int main(int argc, char** argv){
         //waypoint to the cone
         wp_entry_point->move_to_joint_positions(waypoints.right_rest_state.joint_values,wp_entry_point->right_move_group_interface_);
         wp_entry_point->move_to_joint_positions(waypoints.left_rest.joint_values,wp_entry_point->left_move_group_interface_);
-        wp_entry_point->move_to_joint_positions(waypoints.right_wp1.joint_values,wp_entry_point->right_move_group_interface_);
-        
-        // right to the cc holding the cone
-        
+    
+        // right to the cc holding the cone    
         offset_position(waypoints.right_wp3.pose,std::vector<double>{0,0,-0.02});
         std::vector<geometry_msgs::msg::Pose> to_the_cone{
+            waypoints.right_wp0.pose,
+            waypoints.right_wp1.pose,
             waypoints.right_wp2.pose,
-            waypoints.right_wp3.pose,
+            waypoints.right_wp3.pose
         };
         
-        auto right_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(to_the_cone,std::vector<double>{0.9,0.7},0.3,0.02,"right");
-        wp_entry_point->move_to_joint_positions(waypoints.left_wp1.joint_values,wp_entry_point->left_move_group_interface_);
-        
-
+        // wp_entry_point->move_to_joint_positions(waypoints.left_wp1.joint_values,wp_entry_point->left_move_group_interface_);
         left_gripper_off();
-
+        
         std::vector<geometry_msgs::msg::Pose> left_to_the_cone{
-            waypoints.left_wp2.pose,
-            waypoints.left_wp3.pose,
+            waypoints.left_wp0.pose,
+            waypoints.left_wp1.pose,
+            waypoints.left_wp2.pose
         };
-        auto left_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(left_to_the_cone,std::vector<double>{1.0,0.6},0.3,0.01,"left");
+        
+        auto right_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(to_the_cone,std::vector<double>{1.75,1.75,1.75,1.2},0.3,0.15,"right");
+        auto left_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(left_to_the_cone,std::vector<double>{3.0,2.5,2.0},0.3,0.1,"left");
 
         wp_entry_point->block_till_response_execute_cubic_trajectory(right_to_the_cone_future,15s);
         wp_entry_point->block_till_response_execute_cubic_trajectory(left_to_the_cone_future,15s);
+
+        std::vector<geometry_msgs::msg::Pose> left_on_cone{
+            waypoints.left_wp3.pose
+        };
+        auto left_on_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(left_on_cone,std::vector<double>{1.2},0.3,0.0,"left");
+        wp_entry_point->block_till_response_execute_cubic_trajectory(left_on_cone_future,15s);
+
 
         left_gripper_on();
         offset_rotation(waypoints.left_wp4.pose,Eigen::AngleAxisd(0.1,Eigen::Vector3d(0,0,1)));
@@ -137,9 +144,9 @@ int main(int argc, char** argv){
         
         std::vector<geometry_msgs::msg::Pose> left_clear{
             waypoints.left_wp5.pose,
-            waypoints.left_wp6.pose,
+            waypoints.left_wp6.pose
         };
-        auto left_clear_future = wp_entry_point->async_start_execute_waypoints_cubic(left_clear,std::vector<double>{0.5,1.2},0.3,0.0,"left");
+        auto left_clear_future = wp_entry_point->async_start_execute_waypoints_cubic(left_clear,std::vector<double>{1.0,1.2},0.3,0.0,"left");
         std::this_thread::sleep_for(500ms);
         left_gripper_off();
         

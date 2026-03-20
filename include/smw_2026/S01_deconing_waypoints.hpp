@@ -10,6 +10,7 @@ public:
     };
 
     Waypoint right_rest_state;
+    Waypoint right_wp0;
     Waypoint right_wp1;
     Waypoint right_wp2;
     Waypoint right_wp3;
@@ -21,6 +22,7 @@ public:
     Waypoint right_wp8;
 
     Waypoint left_rest;
+    Waypoint left_wp0;
     Waypoint left_wp1;
     Waypoint left_wp2;
     Waypoint left_wp3;
@@ -43,21 +45,30 @@ public:
                 -5.47044271627535,
                 2.9955930709838867
             },
-            {}
+            {
+                0.280, -0.576, 0.473,
+                0.529, 0.454, 0.442, 0.564
+            }
+        );
+
+        // goin to cc
+        initialize_wp(
+            right_wp0,
+            {},
+            {
+                0.619, -0.591, 0.260,
+                0.321, 0.242, 0.494, 0.771
+            }
         );
 
         // goin to cc
         initialize_wp(
             right_wp1,
+            {},
             {
-                -0.45845014253725225,
-                -0.8516943019679566,
-                2.167271439229147,
-                -1.531251722281315,
-                -5.1756232420550745,
-                1.7074766159057617
-            },
-            {}
+                0.734, -0.295, 0.137,
+                0.294, 0.060, 0.370, 0.879
+            }
         );
 
         // below cc
@@ -137,18 +148,22 @@ public:
             {}
         );
 
-        // going to the cc
+        // left approach to the cone
         initialize_wp(
-            left_wp1,
-            {
-                -0.13966781297792608,
-                -2.817355295220846,
-                -1.7942485809326172,
-                -0.1013450187495728,
-                -1.5697420279132288,
-                -1.4321067968951624
-            },
-            {}
+        	left_wp0,
+        	{},
+        	{
+        		0.504, 0.306, 0.452,
+        		0.680, 0.003, -0.015, -0.733,
+        	}
+        );
+        initialize_wp(
+        	left_wp1,
+        	{},
+        	{
+        		0.597, 0.117, 0.247,
+        		0.680, 0.003, -0.015, -0.733,
+        	}
         );
         
         //// CODE SPECIFIC TO SO1

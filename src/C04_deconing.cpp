@@ -99,13 +99,13 @@ int main(int argc, char** argv){
         //waypoint to the cone
         wp_entry_point->move_to_joint_positions(waypoints.right_rest_state.joint_values,wp_entry_point->right_move_group_interface_);
         wp_entry_point->move_to_joint_positions(waypoints.left_rest.joint_values,wp_entry_point->left_move_group_interface_);
-        wp_entry_point->move_to_joint_positions(waypoints.right_wp1.joint_values,wp_entry_point->right_move_group_interface_);
-        wp_entry_point->move_to_joint_positions(waypoints.left_wp1.joint_values,wp_entry_point->left_move_group_interface_);
         
         // right to the cc holding the cone
         std::vector<geometry_msgs::msg::Pose> to_the_cone{
+            waypoints.right_wp0.pose,
+            waypoints.right_wp1.pose,
             waypoints.right_wp2.pose,
-            waypoints.right_wp3.pose,
+            waypoints.right_wp3.pose
         };
         offset_position(waypoints.left_wp4.pose,std::vector<double>{0.009,0.0,0.0});
         
@@ -113,15 +113,26 @@ int main(int argc, char** argv){
         
         // left to unlock
         std::vector<geometry_msgs::msg::Pose> left_to_the_cone{
+            waypoints.left_wp1.pose,
+            waypoints.left_wp2.pose,
             waypoints.left_wp3.pose,
-            waypoints.left_wp4.pose,
         };
 
-        auto right_to_the_cone_future  = wp_entry_point->async_start_execute_waypoints_cubic(to_the_cone,std::vector<double>{0.7,0.4},0.3,0.02,"right");
-        auto left_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(left_to_the_cone,std::vector<double>{2.9,0.7},0.3,0.04,"left");
+        auto right_to_the_cone_future  = wp_entry_point->async_start_execute_waypoints_cubic(to_the_cone,std::vector<double>{1.75,1.75,1.75,1.0},0.3,0.15,"right");
+
+        // wp_entry_point->move_to_joint_positions(waypoints.left_wp1.joint_values,wp_entry_point->left_move_group_interface_);
+
+        auto left_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(left_to_the_cone,std::vector<double>{3.0,2.5,2.0},0.3,0.04,"left");
         
         wp_entry_point->block_till_response_execute_cubic_trajectory(right_to_the_cone_future,15s);
         wp_entry_point->block_till_response_execute_cubic_trajectory(left_to_the_cone_future,15s);
+
+        std::vector<geometry_msgs::msg::Pose> left_on_cone{
+            waypoints.left_wp4.pose
+        };
+        auto left_on_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(left_on_cone,std::vector<double>{1.2},0.3,0.0,"left");
+        wp_entry_point->block_till_response_execute_cubic_trajectory(left_on_cone_future,15s);
+
         
         // left unlocked, now right apply pressure a little
         offset_rotation(waypoints.right_wp4.pose,Eigen::AngleAxisd(-0.1,Eigen::Vector3d(0,0,1)));
@@ -132,7 +143,7 @@ int main(int argc, char** argv){
 
         // now left back away
         std::vector<geometry_msgs::msg::Pose> left_back_away{
-            waypoints.left_wp5.pose,
+            waypoints.left_wp5.pose
         };
         wp_entry_point->execute_waypoints_cubic(left_back_away,std::vector<double>{1.5},0.3,0.02,"left");
 
@@ -143,9 +154,6 @@ int main(int argc, char** argv){
         };
         auto right_fullunlock_future = wp_entry_point->async_start_execute_waypoints_cubic(right_fullunlock,std::vector<double>{1.0,0.8},0.3,0.0,"right"); 
 
-        // clear left away completely
-        wp_entry_point->move_to_joint_positions(waypoints.left_home.joint_values, wp_entry_point->left_move_group_interface_);
-        
         // get the right arm back
         std::vector<geometry_msgs::msg::Pose> right_back{
             waypoints.right_wp7.pose,
@@ -154,7 +162,12 @@ int main(int argc, char** argv){
 
         };
         wp_entry_point->block_till_response_execute_cubic_trajectory(right_fullunlock_future,15s);
-        wp_entry_point->execute_waypoints_cubic(right_back,std::vector<double>{0.75,0.75,1.5},0.3,0.1,"right"); 
+        auto right_back_future = wp_entry_point->async_start_execute_waypoints_cubic(right_back,std::vector<double>{1.5,1.5,1.5},0.3,0.1,"right"); 
+        
+        // clear left away completely
+        wp_entry_point->move_to_joint_positions(waypoints.left_home.joint_values, wp_entry_point->left_move_group_interface_);
+        wp_entry_point->block_till_response_execute_cubic_trajectory(right_back_future,15s);
+        
         left_gripper_neutral();
     };
 

@@ -15,7 +15,6 @@ public:
     Waypoint right_wp3;
     Waypoint right_wp4;
     Waypoint right_wp5;
-    Waypoint right_wp6;
     Waypoint right_wp7;
     Waypoint right_wp78;
     Waypoint right_wp8;

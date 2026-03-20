@@ -223,6 +223,13 @@ def launch_setup(context, *args, **kwargs):
     }}
 
     #### nodes
+    perception_proxy_server = Node(
+        package="smw_2026",
+        executable="perception_proxy_server",
+        name="perception_proxy_server",
+        output="screen",
+    )
+
     co1_deconing_node = Node(
         package="smw_2026",
         executable="co1_deconing",
@@ -433,6 +440,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     nodes_to_start = [
+        perception_proxy_server,
         left_task_space_cubic_polynomial_trajectory_server,
         right_task_space_cubic_polynomial_trajectory_server,
         # left_rest_server,

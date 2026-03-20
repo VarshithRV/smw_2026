@@ -100,6 +100,16 @@ so1_deconing
 DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(so3_deconing src/S03_deconing.cpp)
+ament_target_dependencies(so3_deconing ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_include_directories(so3_deconing PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+install(TARGETS
+so3_deconing
+DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

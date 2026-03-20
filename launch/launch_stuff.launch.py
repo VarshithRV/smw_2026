@@ -268,6 +268,21 @@ def launch_setup(context, *args, **kwargs):
         ]
     )
 
+    so3_deconing_node = Node(
+        package="smw_2026",
+        executable="so3_deconing",
+        name="so3_deconing",
+        output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {"use_sim_time": use_sim_time},
+            {
+            },
+        ]
+    )
+
     left_task_space_cubic_polynomial_trajectory_server = Node(
         package="motion_planning_abstractions",
         executable="task_space_cubic_polynomial_trajectory_server",
@@ -427,6 +442,7 @@ def launch_setup(context, *args, **kwargs):
         co1_deconing_node,
         co4_deconing_node,
         so1_deconing_node,
+        so3_deconing_node,
     ]
     
     return nodes_to_start

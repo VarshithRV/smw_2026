@@ -61,13 +61,14 @@ public:
             }
         );
 
-        // goin to cc
+        // goin to cc, this is a good place to stay while waiting for perception
         initialize_wp(
             right_wp1,
             {},
             {
                 0.734, -0.295, 0.137,
-                0.294, 0.060, 0.370, 0.879
+                // 0.294, 0.060, 0.370, 0.879
+                0.321, 0.242, 0.494, 0.771
             }
         );
 
@@ -157,6 +158,8 @@ public:
         		0.680, 0.003, -0.015, -0.733,
         	}
         );
+
+        // good place to wait for left
         initialize_wp(
         	left_wp1,
         	{},

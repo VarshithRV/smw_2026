@@ -228,6 +228,12 @@ def launch_setup(context, *args, **kwargs):
         executable="perception_proxy_server",
         name="perception_proxy_server",
         output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {"use_sim_time": use_sim_time},
+        ]
     )
 
     co1_deconing_node = Node(

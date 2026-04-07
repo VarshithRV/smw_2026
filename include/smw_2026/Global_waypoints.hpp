@@ -9,22 +9,11 @@ public:
         geometry_msgs::msg::Pose pose;
     };
 
-    // deconing program for C01
     Waypoint right_rest_state;
     Waypoint right_wp0;
     Waypoint right_wp1;
     Waypoint right_wp2;
-    // at the corner cast
     Waypoint right_wp3;
-    // - z 90 deg
-    Waypoint right_wp4;
-    // down
-    Waypoint right_wp5;
-    // come back
-    Waypoint right_wp6;
-    Waypoint right_wp7;
-    // come back all the way
-    Waypoint right_wp8;
 
     Waypoint left_rest;
     Waypoint left_wp0;
@@ -32,6 +21,8 @@ public:
 
     Waypoints()
     {
+        // right side first
+
         initialize_wp(
             right_rest_state,
             {
@@ -73,8 +64,9 @@ public:
             right_wp2,
             {},
             {
-                0.768, -0.022, 0.196,
-                0.003, -0.004, -0.029, 1.000
+                0.255, -0.163, 0.514,
+                // 0.294, 0.060, 0.370, 0.879
+                0.710, 0.008, 0.011, -0.704
             }
         );
 
@@ -82,58 +74,13 @@ public:
             right_wp3,
             {},
             {
-                0.768, -0.0, 0.370,
-                0.003, -0.004, -0.029, 1.000
-            }
-        );
-
-        initialize_wp(
-            right_wp4,
-            {},
-            {
-                0.768, -0.0, 0.370,
-                0.785, -0.025, -0.013, 0.618
-            }
-        );
-
-        initialize_wp(
-            right_wp5,
-            {},
-            {
-                0.768, -0.0, 0.196,
-                0.785, -0.025, -0.013, 0.618
-            }
-        );
-
-        initialize_wp(
-            right_wp6,
-            {},
-            {
-                0.504, -0.100, 0.348,
-                0.002, -0.014, -0.001, 1.000
-            }
-        );
-
-        initialize_wp(
-            right_wp7,
-            {},
-            {
-                0.3, -0.05, 0.50,
-                0.710, 0.008, 0.011, -0.704
-            }
-        );
-
-        initialize_wp(
-            right_wp8,
-            {},
-            {
-                -0.022, 0.005, 0.520,
+                0.357, -0.555, 0.412,
+                // 0.294, 0.060, 0.370, 0.879
                 0.710, 0.008, 0.011, -0.704
             }
         );
 
 
-        // left waypoints
         // left side next
         initialize_wp(
             left_rest,

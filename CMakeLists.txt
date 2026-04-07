@@ -65,6 +65,9 @@ install(
 
 add_executable(perception_proxy_server src/perception_proxy_server.cpp)
 ament_target_dependencies(perception_proxy_server ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_include_directories(perception_proxy_server PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 install(TARGETS
 perception_proxy_server
 DESTINATION lib/${PROJECT_NAME}

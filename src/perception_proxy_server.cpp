@@ -87,7 +87,7 @@ int main(const int argc, const char** argv){
             
             /// this is only for testing
             // char buffer[1024] = {0};
-            char buffer[1024] = "S03L";
+            char buffer[1024] = "C01L";
 
 
             auto waypoints = Waypoints();

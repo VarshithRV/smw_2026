@@ -183,7 +183,7 @@ int main(const int argc, const char** argv){
             dual_arm_control_interface->block_till_response_execute_cubic_trajectory(left_movement_future,std::chrono::seconds(15));
             RCLCPP_INFO(node->get_logger(),"Movement finished, starting cone routines");
 
-            if(std::string(buffer) == "C01L"){
+            if(std::string(buffer) == "C01L" or std::string(buffer) == "C01R"){
                 co1_client->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
             }
             else if(std::string(buffer) == "S01L"){

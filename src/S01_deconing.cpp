@@ -112,8 +112,9 @@ int main(int argc, char** argv){
         std::vector<double> right_preaction_state{0.6327896118164062, -1.530074381535389, -2.6847221851348877, -0.4980843824199219, -1.5689991156207483, -2.2041104475604456};
         std::vector<double> right_cone_transfer_state{0.9119113789548221, -1.329804040400156, 2.472230381749085, -2.7317907796696113, -4.6925038067020255, 2.23798315279257};
         std::vector<double> left_wait_state{-0.17850903321692962,-2.7613514763553777,-1.7269785153531936,-0.19646669880670722,-1.584020013016373,-3.037883709713575};
-        std::vector<double> right_wait_state{-0.4070860886603199,-0.942273518609286,2.00651399416375,-1.850991596596188,-5.691643654009712,0.7551481872603174};
-
+        // std::vector<double> right_wait_state{-0.4070860886603199,-0.942273518609286,2.00651399416375,-1.850991596596188,-5.691643654009712,0.7551481872603174};
+        std::vector<double> right_wait_state{-0.2619536558734339, -0.19895155847583013, 1.4168875853167933, -2.7887374363341273, -4.712385479603903, 1.8327560424804688};
+        
         std::vector<geometry_msgs::msg::Pose> right_waypoints;
         std::vector<double> right_durations;
         std::vector<geometry_msgs::msg::Pose> left_waypoints;
@@ -166,7 +167,7 @@ int main(int argc, char** argv){
         auto right_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(right_waypoints,right_durations,0.3,0.15,"right");
         // the robots were waiting then make the right move first
         if(is_joint_state_close(right_wait_state,right_start_joint_state) and is_joint_state_close(left_wait_state,left_start_joint_state)){
-            std::this_thread::sleep_for(3s);
+            std::this_thread::sleep_for(2s);
         }
         auto left_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(left_waypoints,left_durations,0.3,0.1,"left");
 

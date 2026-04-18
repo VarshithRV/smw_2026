@@ -111,7 +111,8 @@ int main(int argc, char** argv){
         std::vector<double> right_preaction_state{0.6327896118164062, -1.530074381535389, -2.6847221851348877, -0.4980843824199219, -1.5689991156207483, -2.2041104475604456};
         std::vector<double> right_cone_transfer_state{0.9119113789548221, -1.329804040400156, 2.472230381749085, -2.7317907796696113, -4.6925038067020255, 2.23798315279257};
         std::vector<double> left_wait_state{-0.17850903321692962,-2.7613514763553777,-1.7269785153531936,-0.19646669880670722,-1.584020013016373,-3.037883709713575};
-        std::vector<double> right_wait_state{-0.4070860886603199,-0.942273518609286,2.00651399416375,-1.850991596596188,-5.691643654009712,0.7551481872603174};
+        // std::vector<double> right_wait_state{-0.4070860886603199,-0.942273518609286,2.00651399416375,-1.850991596596188,-5.691643654009712,0.7551481872603174};
+        std::vector<double> right_wait_state{-0.2619536558734339, -0.19895155847583013, 1.4168875853167933, -2.7887374363341273, -4.712385479603903, 1.8327560424804688};
 
         std::vector<geometry_msgs::msg::Pose> right_waypoints;
         std::vector<double> right_durations;
@@ -165,6 +166,12 @@ int main(int argc, char** argv){
             0.18,
             "right"
         );
+
+        if(is_joint_state_close(right_start_joint_state,right_wait_state)){
+            // delay left if right is in wait state
+            std::this_thread::sleep_for(1.5s);
+        }
+
         // start the left
         auto left_to_the_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(
             left_waypoints,
@@ -183,11 +190,12 @@ int main(int argc, char** argv){
         wp_entry_point->block_till_response_execute_cubic_trajectory(left_to_the_cone_future,15s);
         
         // left to hold the cone before starting to decone
+        // offset_position(waypoints.left_wp4.pose,std::vector<double>{0,0,0.005});
         std::vector<geometry_msgs::msg::Pose> left_hold_the_cone_waypoints{
             waypoints.left_wp4.pose,
         };
         std::vector<double> left_hold_the_cone_durations{
-            0.5,
+            1,
         };
 
         // start left to hold the cone
@@ -198,15 +206,19 @@ int main(int argc, char** argv){
             0.0,
             "left"
         );
-
+        
+        
         // block till both the left is finished
         wp_entry_point->block_till_response_execute_cubic_trajectory(left_hold_the_cone_future,15s);
-        left_gripper_on();
-
+        
+        // std::this_thread::sleep_for(0.3s);
+        
         // block till the right is finished
         wp_entry_point->block_till_response_execute_cubic_trajectory(right_to_the_cone_future,15s);
-
+        // left_gripper_on();
+        
         // twist the cone using the left gripper
+        offset_rotation(waypoints.left_wp5.pose,Eigen::AngleAxisd((M_PI/180)*5,Eigen::Vector3d{0,0,-1}));
         std::vector<geometry_msgs::msg::Pose> left_twist_cone_waypoints{
             waypoints.left_wp5.pose
         };
@@ -248,6 +260,7 @@ int main(int argc, char** argv){
         geometry_msgs::msg::Pose left_wp7;
         left_wp7.position = left_wp6.position;
         left_wp7.orientation = waypoints.left_wp4.pose.orientation;
+        // offset_rotation(left_wp7,Eigen::AngleAxisd((M_PI/180)*90,Eigen::Vector3d{0,0,1}));
         std::vector<geometry_msgs::msg::Pose> left_untwist_waypoints{left_wp7};
         std::vector<double> left_untwist_durations{0.5};
         wp_entry_point->execute_waypoints_cubic(

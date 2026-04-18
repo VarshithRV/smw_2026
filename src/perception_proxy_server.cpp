@@ -48,10 +48,10 @@ int main(const int argc, const char** argv){
         std::cerr<<"Invalid address/ Address not supported"<<std::endl;
         return -1;
     }
-    // if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
-    //     std::cerr << "Connection Failed" << std::endl;
-    //     return -1;
-    // }
+    if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
+        std::cerr << "Connection Failed" << std::endl;
+        return -1;
+    }
 
     auto cb_group = node->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
@@ -86,15 +86,14 @@ int main(const int argc, const char** argv){
         [node,sock,hello,co1_client,so1_client,so3_client,co4_client,dual_arm_control_interface](std_srvs::srv::Trigger_Request::SharedPtr req, std_srvs::srv::Trigger_Response::SharedPtr res){
             
             /// this is only for testing
-            // char buffer[1024] = {0};
-            char buffer[1024] = "C01L";
-
+            char buffer[1024] = {0};
+            // char buffer[1024] = "C04L";
 
             auto waypoints = Waypoints();
             // put ros shit here
             // gotta send data here and then start listening
             // send data
-            // send(sock, hello, strlen(hello), 0);
+            send(sock, hello, strlen(hello), 0);
             std::cout<<"Message sent"<<std::endl;
 
             // move robots here, if start at preaction : follow the path until wp1, else if at cone_transfer, else anywhere else
@@ -174,7 +173,7 @@ int main(const int argc, const char** argv){
             auto left_movement_future = dual_arm_control_interface->async_start_execute_waypoints_cubic(left_waypoints,left_durations,0.3,0.2,"left");
 
             // receive
-            // read(sock,buffer,1024);
+            read(sock,buffer,1024);
 
             std::cout<<"Message from the detection server : "<<buffer<<" size of message : "<<std::string(buffer).length()<<std::endl;
 
@@ -198,6 +197,8 @@ int main(const int argc, const char** argv){
             }
             else{
                 RCLCPP_ERROR(node->get_logger(),"Cone [%s] not supported",buffer);
+                dual_arm_control_interface->move_to_joint_positions(left_preaction_state,dual_arm_control_interface->left_move_group_interface_);
+                dual_arm_control_interface->move_to_joint_positions(right_preaction_state,dual_arm_control_interface->right_move_group_interface_);
             }
             res->success=true;
         },

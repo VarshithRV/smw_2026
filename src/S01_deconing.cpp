@@ -183,7 +183,8 @@ int main(int argc, char** argv){
 
 
         left_gripper_on();
-        offset_rotation(waypoints.left_wp4.pose,Eigen::AngleAxisd(0.1,Eigen::Vector3d(0,0,1)));
+        offset_rotation(waypoints.left_wp4.pose,Eigen::AngleAxisd(0.4,Eigen::Vector3d(0,0,1)));
+        offset_rotation(waypoints.left_wp5.pose,Eigen::AngleAxisd(0.4,Eigen::Vector3d(0,0,1)));
         std::vector<geometry_msgs::msg::Pose> left_twist_cone{
             waypoints.left_wp4.pose
         };

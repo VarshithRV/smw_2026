@@ -190,7 +190,8 @@ int main(int argc, char** argv){
         wp_entry_point->block_till_response_execute_cubic_trajectory(left_to_the_cone_future,15s);
         
         // left to hold the cone before starting to decone
-        // offset_position(waypoints.left_wp4.pose,std::vector<double>{0,0,0.005});
+        offset_position(waypoints.left_wp4.pose,std::vector<double>{0,0,0.01});
+        offset_position(waypoints.left_wp5.pose,std::vector<double>{0,0,0.01});
         std::vector<geometry_msgs::msg::Pose> left_hold_the_cone_waypoints{
             waypoints.left_wp4.pose,
         };
@@ -207,18 +208,32 @@ int main(int argc, char** argv){
             "left"
         );
         
-        
-        // block till both the left is finished
-        wp_entry_point->block_till_response_execute_cubic_trajectory(left_hold_the_cone_future,15s);
-        
-        // std::this_thread::sleep_for(0.3s);
-        
         // block till the right is finished
         wp_entry_point->block_till_response_execute_cubic_trajectory(right_to_the_cone_future,15s);
-        // left_gripper_on();
+
+        // from wp5 to wp6 right
+        std::vector<geometry_msgs::msg::Pose> right_lift_cone_waypoints{waypoints.right_wp6.pose};
+        std::vector<double> right_lift_cone_durations{0.5};
+        
+        auto right_lift_cone_future = wp_entry_point->async_start_execute_waypoints_cubic(
+            right_lift_cone_waypoints,
+            right_lift_cone_durations,
+            0.3,
+            0.0,
+            "right"
+        );
+        
+
+        // wait till right is finished
+        wp_entry_point->block_till_response_execute_cubic_trajectory(right_lift_cone_future,15s);
+
+        // wait till left is finished
+        wp_entry_point->block_till_response_execute_cubic_trajectory(left_hold_the_cone_future,15s);
+        
+        left_gripper_on();
         
         // twist the cone using the left gripper
-        offset_rotation(waypoints.left_wp5.pose,Eigen::AngleAxisd((M_PI/180)*5,Eigen::Vector3d{0,0,-1}));
+        // offset_rotation(waypoints.left_wp5.pose,Eigen::AngleAxisd((M_PI/180)*5,Eigen::Vector3d{0,0,-1}));
         std::vector<geometry_msgs::msg::Pose> left_twist_cone_waypoints{
             waypoints.left_wp5.pose
         };
@@ -228,9 +243,9 @@ int main(int argc, char** argv){
         wp_entry_point->execute_waypoints_cubic(left_twist_cone_waypoints,left_twist_cone_durations,0.3,0.0,"left");
 
         // gotta move both of them down at the same time 
-        geometry_msgs::msg::Pose right_wp6(waypoints.right_wp5.pose), left_wp6(waypoints.left_wp5.pose);
+        geometry_msgs::msg::Pose right_wp6(waypoints.right_wp6.pose), left_wp6(waypoints.left_wp5.pose);
         offset_position(right_wp6,std::vector<double>{0.0,0.0,-0.17});
-        offset_position(left_wp6,std::vector<double>{0.0,0.0,-0.18});
+        offset_position(left_wp6,std::vector<double>{0.0,0.0,-0.17});
 
         std::vector<geometry_msgs::msg::Pose> right_down_waypoints{right_wp6};
         std::vector<geometry_msgs::msg::Pose> left_down_waypoints{left_wp6};

@@ -304,7 +304,7 @@ int main(int argc, char** argv){
         RCLCPP_INFO(node_->get_logger(),"NOOOOOOOOOOWW, STARTING LEFT BACK AWAY");
 
         // in parallel, left back away and right get back routine
-        offset_position(waypoints.left_wp2.pose,std::vector<double>{0.0,0.2,-0.1});
+        offset_position(waypoints.left_wp2.pose,std::vector<double>{0.0,0.0,-0.1});
         std::vector<geometry_msgs::msg::Pose> left_back_away_waypoints{
             waypoints.left_wp2.pose,
             waypoints.left_wp1.pose,

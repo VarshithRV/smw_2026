@@ -192,7 +192,7 @@ int main(const int argc, const char** argv){
             else if(std::string(buffer) == "S03L"){
                 so3_client->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
             }
-            else if(std::string(buffer) == "C04L"){
+            else if(std::string(buffer) == "C04L" or std::string(buffer) == "C04R"){
                 co4_client->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
             }
             else{
